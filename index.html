@@ -99,6 +99,49 @@
       </div>
     </section>
 
+<section id="bereich" class="card" style="display:none;">
+  <button class="menuBtn" onclick="zeigeStart()">← Zurück</button>
+  <h2 id="bereichTitel"></h2>
+  <div id="bereichInhalt"></div>
+</section>
+    
   </main>
+
+  <script>
+function zeigeBereich(typ) {
+  const bereich = document.getElementById("bereich");
+  const titel = document.getElementById("bereichTitel");
+  const inhalt = document.getElementById("bereichInhalt");
+
+  document.querySelectorAll(".card").forEach(card => {
+    card.style.display = "none";
+  });
+
+  bereich.style.display = "block";
+
+  if (typ === "kunde") {
+    titel.textContent = "Kunde anlegen";
+    inhalt.innerHTML = "<p>Hier kommt als Nächstes das Kundenformular hinein.</p>";
+  }
+
+  if (typ === "muenchen") {
+    titel.textContent = "München-Tour";
+    inhalt.innerHTML = "<p>Hier kommt später die Kundenliste für die München-Tour hinein.</p>";
+  }
+
+  if (typ === "berlin") {
+    titel.textContent = "Berlin-Tour";
+    inhalt.innerHTML = "<p>Hier kommt später die Kundenliste für die Berlin-Tour hinein.</p>";
+  }
+}
+
+function zeigeStart() {
+  document.querySelectorAll(".card").forEach(card => {
+    card.style.display = "block";
+  });
+
+  document.getElementById("bereich").style.display = "none";
+}
+</script>  
 </body>
 </html>
