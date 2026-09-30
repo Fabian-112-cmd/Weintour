@@ -66,6 +66,10 @@
 
     <h1>🍇 Weintour</h1>
 
+<button type="button" class="menuBtn" onclick="abmelden()">
+  Abmelden
+</button>
+    
 <section id="loginBox">
   <h2>Anmelden</h2>
 
@@ -348,6 +352,20 @@ async function anmeldungPruefen() {
 }
 
 anmeldungPruefen();
+
+async function abmelden() {
+  try {
+    const { error } = await supabaseClient.auth.signOut({
+      scope: "local"
+    });
+
+    if (error) throw error;
+
+    window.location.reload();
+  } catch (error) {
+    alert("Abmelden fehlgeschlagen: " + error.message);
+  }
+}
     
 </script>    
 </body>
