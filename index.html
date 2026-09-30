@@ -333,6 +333,21 @@ async function anmelden(event) {
     button.disabled = false;
   }
 }
+
+async function anmeldungPruefen() {
+  const { data, error } = await supabaseClient.auth.getSession();
+
+  if (error) {
+    document.getElementById("loginMeldung").textContent =
+      "Anmeldung konnte nicht geprüft werden: " + error.message;
+    return;
+  }
+
+  document.getElementById("loginBox").style.display =
+    data.session ? "none" : "block";
+}
+
+anmeldungPruefen();
     
 </script>    
 </body>
