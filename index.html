@@ -67,37 +67,28 @@
     <h1>🍇 Weintour</h1>
 
     <section class="card">
-      <button class="menuBtn" onclick="zeigebereic('kunde')>
-        ➕ Kunde anlegen
-        <span>›</span>
-      </button>
+  <button class="menuBtn" onclick="zeigeBereich('kunde')">
+    <strong>➕ Kunde anlegen</strong><br>
+    <small>Neue Kunden mit Adresse, Telefon und Tour-Zuordnung anlegen.</small>
+    <span>›</span>
+  </button>
+</section>
 
-      <div class="sub">
-        Neue Kunden mit Adresse, Telefon und Tour-Zuordnung anlegen.
-      </div>
-    </section>
+<section class="card">
+  <button class="menuBtn" onclick="zeigeBereich('muenchen')">
+    <strong>🚚 München-Tour</strong><br>
+    <small>Kunden im Süden planen, aktivieren und abarbeiten.</small>
+    <span>›</span>
+  </button>
+</section>
 
-    <section class="card">
-      <button class="menuBtn" onclick="zeigebereic('muenchen')>
-        🚚 München-Tour
-        <span>›</span>
-      </button>
-
-      <div class="sub">
-        Kunden im Süden planen, aktivieren und abarbeiten.
-      </div>
-    </section>
-
-    <section class="card">
-      <button class="menuBtn" onclick="zeigebereic('berlin')>
-        🚚 Berlin-Tour
-        <span>›</span>
-      </button>
-
-      <div class="sub">
-        Kunden im Norden planen, aktivieren und abarbeiten.
-      </div>
-    </section>
+<section class="card">
+  <button class="menuBtn" onclick="zeigeBereich('berlin')">
+    <strong>🚚 Berlin-Tour</strong><br>
+    <small>Kunden im Norden planen, aktivieren und abarbeiten.</small>
+    <span>›</span>
+  </button>
+</section>
 
 <section id="bereich" class="card" style="display:none;">
   <button class="menuBtn" onclick="zeigeStart()">← Zurück</button>
