@@ -197,18 +197,66 @@ function zeigeBereich(typ) {
     </div>
   `;
 }
+if (typ === "muenchen" || typ === "berlin") {
+  titel.textContent =
+    typ === "muenchen" ? "München-Tour" : "Berlin-Tour";
 
-  if (typ === "muenchen") {
-    titel.textContent = "München-Tour";
-    inhalt.innerHTML = "<p>Hier kommt später die Kundenliste für die München-Tour hinein.</p>";
-  }
-
-  if (typ === "berlin") {
-    titel.textContent = "Berlin-Tour";
-    inhalt.innerHTML = "<p>Hier kommt später die Kundenliste für die Berlin-Tour hinein.</p>";
-  }
+  kundenLaden(typ);
+}
 }
 
+async function kundenLaden(tour) {
+  const inhalt = document.getElementById("bereichInhalt");
+  inhalt.textContent = "Kunden werden geladen …";
+
+  try {
+    const { data, error } = await supabaseClient
+      .from("kunden")
+      .select("*")
+      .eq("tour", tour)
+      .order("name");
+
+    if (error) throw error;
+
+    inhalt.replaceChildren();
+
+    if (data.length === 0) {
+      inhalt.textContent = "Für diese Tour sind noch keine Kunden gespeichert.";
+      return;
+    }
+
+    for (const kunde of data) {
+      const eintrag = document.createElement("div");
+      eintrag.style.cssText =
+        "padding:16px 0;border-bottom:1px solid #ddd;";
+
+      const name = document.createElement("strong");
+      name.textContent = kunde.name;
+      eintrag.appendChild(name);
+
+      const details = [
+        kunde.ansprechpartner,
+        kunde.strasse,
+        [kunde.plz, kunde.ort].filter(Boolean).join(" "),
+        kunde.telefon,
+        kunde.notiz
+      ];
+
+      for (const text of details) {
+        if (!text) continue;
+        const zeile = document.createElement("div");
+        zeile.textContent = text;
+        zeile.style.whiteSpace = "pre-wrap";
+        eintrag.appendChild(zeile);
+      }
+
+      inhalt.appendChild(eintrag);
+    }
+  } catch (error) {
+    inhalt.textContent = "Laden fehlgeschlagen: " + error.message;
+  }
+}
+    
 function zeigeStart() {
   document.querySelectorAll(".card").forEach(card => {
     card.style.display = "block";
