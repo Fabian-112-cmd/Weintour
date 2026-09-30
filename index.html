@@ -111,9 +111,56 @@ function zeigeBereich(typ) {
   bereich.style.display = "block";
 
   if (typ === "kunde") {
-    titel.textContent = "Kunde anlegen";
-    inhalt.innerHTML = "<p>Hier kommt als Nächstes das Kundenformular hinein.</p>";
-  }
+  titel.textContent = "➕ Kunde anlegen";
+
+  inhalt.innerHTML = `
+    <div style="display:grid;gap:12px;">
+
+      <input id="kundeName" type="text"
+        placeholder="Firma / Name"
+        style="padding:14px;font-size:17px;border:1px solid #ccc;border-radius:10px;">
+
+      <input id="ansprechpartner" type="text"
+        placeholder="Ansprechpartner"
+        style="padding:14px;font-size:17px;border:1px solid #ccc;border-radius:10px;">
+
+      <input id="strasse" type="text"
+        placeholder="Straße und Hausnummer"
+        style="padding:14px;font-size:17px;border:1px solid #ccc;border-radius:10px;">
+
+      <input id="plz" type="text"
+        placeholder="PLZ"
+        style="padding:14px;font-size:17px;border:1px solid #ccc;border-radius:10px;">
+
+      <input id="ort" type="text"
+        placeholder="Ort"
+        style="padding:14px;font-size:17px;border:1px solid #ccc;border-radius:10px;">
+
+      <input id="telefon" type="tel"
+        placeholder="Telefon"
+        style="padding:14px;font-size:17px;border:1px solid #ccc;border-radius:10px;">
+
+      <select id="tour"
+        style="padding:14px;font-size:17px;border:1px solid #ccc;border-radius:10px;background:white;">
+        <option value="">Tour auswählen</option>
+        <option value="muenchen">München-Tour</option>
+        <option value="berlin">Berlin-Tour</option>
+      </select>
+
+      <textarea id="notiz"
+        placeholder="Notiz"
+        rows="4"
+        style="padding:14px;font-size:17px;border:1px solid #ccc;border-radius:10px;"></textarea>
+
+      <button type="button"
+        onclick="kundeSpeichern()"
+        style="padding:15px;font-size:18px;font-weight:700;border-radius:10px;border:1px solid #bbb;cursor:pointer;">
+        💾 Kunde speichern
+      </button>
+
+    </div>
+  `;
+}
 
   if (typ === "muenchen") {
     titel.textContent = "München-Tour";
@@ -133,6 +180,11 @@ function zeigeStart() {
 
   document.getElementById("bereich").style.display = "none";
 }
+
+function kundeSpeichern() {
+  alert("Kunden speichern verbinden wir als Nächstes mit der Datenbank.");
+}
+    
 </script>  
 </body>
 </html>
