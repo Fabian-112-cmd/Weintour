@@ -66,6 +66,33 @@
 
     <h1>🍇 Weintour</h1>
 
+<section id="loginBox">
+  <h2>Anmelden</h2>
+
+  <form onsubmit="anmelden(event)"
+        style="display:grid;gap:12px;margin-bottom:20px;">
+    <input id="loginEmail"
+           type="email"
+           placeholder="E-Mail"
+           autocomplete="username"
+           required
+           style="padding:14px;font-size:17px;">
+
+    <input id="loginPasswort"
+           type="password"
+           placeholder="Passwort"
+           autocomplete="current-password"
+           required
+           style="padding:14px;font-size:17px;">
+
+    <button id="loginButton"
+            type="submit"
+            class="menuBtn">Anmelden</button>
+
+    <p id="loginMeldung" role="status"></p>
+  </form>
+</section>
+    
     <section class="card">
   <button class="menuBtn" onclick="zeigeBereich('kunde')">
     <strong>➕ Kunde anlegen</strong><br>
@@ -230,7 +257,35 @@ async function kundeSpeichern() {
     button.disabled = false;
   }
 }
+
+async function anmelden(event) {
+  event.preventDefault();
+
+  const button = document.getElementById("loginButton");
+  const meldung = document.getElementById("loginMeldung");
+  const passwort = document.getElementById("loginPasswort");
+
+  button.disabled = true;
+  meldung.textContent = "Anmeldung läuft …";
+
+  try {
+    const { error } = await supabaseClient.auth.signInWithPassword({
+      email: document.getElementById("loginEmail").value.trim(),
+      password: passwort.value
+    });
+
+    if (error) throw error;
+
+    passwort.value = "";
+    document.getElementById("loginBox").style.display = "none";
+    zeigeStart();
+  } catch (error) {
+    meldung.textContent = "Anmeldung fehlgeschlagen: " + error.message;
+  } finally {
+    button.disabled = false;
+  }
+}
     
-</script>  
+</script>    
 </body>
 </html>
