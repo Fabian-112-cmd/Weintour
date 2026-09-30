@@ -98,7 +98,16 @@
     
   </main>
 
+ <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  
   <script>
+    const SUPABASE_URL = "https://grrkvuqxjglfuynmxegv.supabase.co";
+const SUPABASE_KEY = "sb_publishable_5P58BQr8tEksRLUqb8vmOg_uEM_MA24";
+
+const supabaseClient = supabase.createClient(
+  SUPABASE_URL,
+  SUPABASE_KEY
+);
 function zeigeBereich(typ) {
   const bereich = document.getElementById("bereich");
   const titel = document.getElementById("bereichTitel");
@@ -181,8 +190,45 @@ function zeigeStart() {
   document.getElementById("bereich").style.display = "none";
 }
 
-function kundeSpeichern() {
-  alert("Kunden speichern verbinden wir als Nächstes mit der Datenbank.");
+async function kundeSpeichern() {
+  const wert = (id) =>
+    document.getElementById(id).value.trim();
+
+  const kunde = {
+    name: wert("kundeName"),
+    ansprechpartner: wert("ansprechpartner"),
+    strasse: wert("strasse"),
+    plz: wert("plz"),
+    ort: wert("ort"),
+    telefon: wert("telefon"),
+    tour: wert("tour"),
+    notiz: wert("notiz")
+  };
+
+  if (!kunde.name || !kunde.tour) {
+    alert("Bitte Firma / Name eingeben und eine Tour auswählen.");
+    return;
+  }
+
+  const button = document.querySelector(
+    'button[onclick="kundeSpeichern()"]'
+  );
+  button.disabled = true;
+
+  try {
+    const { error } = await supabaseClient
+      .from("kunden")
+      .insert([kunde]);
+
+    if (error) throw error;
+
+    alert("Kunde wurde gespeichert.");
+    zeigeStart();
+  } catch (error) {
+    alert("Speichern fehlgeschlagen: " + error.message);
+  } finally {
+    button.disabled = false;
+  }
 }
     
 </script>  
