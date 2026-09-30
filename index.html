@@ -258,6 +258,17 @@ async function kundenLaden(tour) {
         eintrag.appendChild(zeile);
       }
 
+onst loeschenButton = document.createElement("button");
+loeschenButton.type = "button";
+loeschenButton.textContent = "🗑️ Löschen";
+loeschenButton.style.cssText =
+  "margin-top:12px;padding:10px;border-radius:8px;cursor:pointer;";
+
+loeschenButton.onclick = () =>
+  kundeLoeschen(kunde.id, kunde.name, tour, loeschenButton);
+
+eintrag.appendChild(loeschenButton);
+      
       inhalt.appendChild(eintrag);
     }
   } catch (error) {
@@ -378,6 +389,34 @@ supabaseClient.auth.onAuthStateChange((_event, session) => {
   document.getElementById("loginBox").style.display =
     session ? "none" : "block";
 });
+
+async function kundeLoeschen(id, name, tour, button) {
+  if (!confirm('Kunde "' + name + '" wirklich löschen?')) {
+    return;
+  }
+
+  button.disabled = true;
+
+  try {
+    const { data, error } = await supabaseClient
+      .from("kunden")
+      .delete()
+      .eq("id", id)
+      .select("id");
+
+    if (error) throw error;
+
+    if (!data || data.length === 0) {
+      throw new Error("Der Kunde konnte nicht gelöscht werden.");
+    }
+
+    await kundenLaden(tour);
+  } catch (error) {
+    alert("Löschen fehlgeschlagen: " + error.message);
+  } finally {
+    button.disabled = false;
+  }
+}
     
 </script>    
 </body>
