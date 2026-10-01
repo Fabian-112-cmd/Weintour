@@ -258,6 +258,16 @@ async function kundenLaden(tour) {
         eintrag.appendChild(zeile);
       }
 
+onst bearbeitenButton = document.createElement("button");
+bearbeitenButton.type = "button";
+bearbeitenButton.textContent = "✏️ Bearbeiten";
+bearbeitenButton.style.cssText =
+  "margin:12px 8px 0 0;padding:10px;border-radius:8px;cursor:pointer;";
+
+bearbeitenButton.onclick = () => kundeBearbeiten(kunde);
+eintrag.appendChild(bearbeitenButton);
+
+      
 const loeschenButton = document.createElement("button");
 loeschenButton.type = "button";
 loeschenButton.textContent = "🗑️ Löschen";
@@ -417,6 +427,78 @@ async function kundeLoeschen(id, name, tour, button) {
     button.disabled = false;
   }
 }
+
+function kundeBearbeiten(kunde) {
+  zeigeBereich("kunde");
+  document.getElementById("bereichTitel").textContent =
+    "✏️ Kunde bearbeiten";
+
+  const felder = {
+    kundeName: "name",
+    ansprechpartner: "ansprechpartner",
+    strasse: "strasse",
+    plz: "plz",
+    ort: "ort",
+    telefon: "telefon",
+    tour: "tour",
+    notiz: "notiz"
+  };
+
+  for (const [id, spalte] of Object.entries(felder)) {
+    document.getElementById(id).value = kunde[spalte] ?? "";
+  }
+
+  const button = document.querySelector(
+    'button[onclick="kundeSpeichern()"]'
+  );
+
+  button.textContent = "💾 Änderungen speichern";
+  button.onclick = () => kundeAenderungSpeichern(kunde.id, button);
+}
+
+async function kundeAenderungSpeichern(id, button) {
+  const wert = (feld) =>
+    document.getElementById(feld).value.trim();
+
+  const kunde = {
+    name: wert("kundeName"),
+    ansprechpartner: wert("ansprechpartner"),
+    strasse: wert("strasse"),
+    plz: wert("plz"),
+    ort: wert("ort"),
+    telefon: wert("telefon"),
+    tour: wert("tour"),
+    notiz: wert("notiz")
+  };
+
+  if (!kunde.name || !kunde.tour) {
+    alert("Bitte Firma / Name eingeben und eine Tour auswählen.");
+    return;
+  }
+
+  button.disabled = true;
+
+  try {
+    const { data, error } = await supabaseClient
+      .from("kunden")
+      .update(kunde)
+      .eq("id", id)
+      .select("id");
+
+    if (error) throw error;
+
+    if (!data || data.length === 0) {
+      throw new Error("Der Kunde konnte nicht geändert werden.");
+    }
+
+    zeigeBereich(kunde.tour);
+  } catch (error) {
+    alert("Ändern fehlgeschlagen: " + error.message);
+  } finally {
+    button.disabled = false;
+  }
+}
+
     
 </script>    
 </body>
