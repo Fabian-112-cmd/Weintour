@@ -337,6 +337,28 @@ if (kunde.geplant && kunde.erledigt) {
 }
 
 eintrag.appendChild(planung);
+
+f (kunde.strasse && kunde.ort) {
+  const adresse = [
+    kunde.strasse,
+    kunde.plz,
+    kunde.ort
+  ].filter(Boolean).join(", ");
+
+  const navigation = document.createElement("a");
+  navigation.textContent = "📍 Navigation";
+  navigation.href =
+    "https://www.google.com/maps/dir/?api=1&destination=" +
+    encodeURIComponent(adresse);
+  navigation.target = "_blank";
+  navigation.rel = "noopener noreferrer";
+  navigation.style.cssText =
+    "display:inline-block;margin:12px 8px 0 0;padding:10px;" +
+    "border:1px solid #bbb;border-radius:8px;" +
+    "color:inherit;text-decoration:none;";
+
+  eintrag.appendChild(navigation);
+}      
       
 const bearbeitenButton = document.createElement("button");
 bearbeitenButton.type = "button";
