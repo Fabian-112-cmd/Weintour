@@ -229,6 +229,7 @@ async function kundenLaden(tour) {
     if (error) throw error;
 
     inhalt.replaceChildren();
+    await tourSteuerungAnzeigen(tour, data, inhalt);
 
   const filterButton = document.createElement("button");
 filterButton.type = "button";
@@ -627,6 +628,292 @@ async function kundenStatusSpeichern(id, aenderung, tour, element) {
   } finally {
     element.disabled = false;
   }
+}
+
+/ Tour-Steuerung
+const ZUHAUSE =
+  "Kaiserbachstraße 20, 76831 Heuchelheim-Klingen, Deutschland";
+
+const tourZustaende = {};
+const tourSpeicherKeys = {};
+
+function kundenAdresse(kunde) {
+  if (!kunde.strasse || !kunde.ort) return "";
+  return [
+    kunde.strasse,
+    kunde.plz,
+    kunde.ort,
+    "Deutschland"
+  ].filter(Boolean).join(", ");
+}
+
+function navigationsUrl(adresse) {
+  return "https://www.google.com/maps/dir/?api=1" +
+    "&travelmode=driving&dir_action=navigate&destination=" +
+    encodeURIComponent(adresse);
+}
+
+function navigationStarten(adresse) {
+  // Im selben Fenster: kein Popup nach dem Speichern nötig.
+  window.location.assign(navigationsUrl(adresse));
+}
+
+function tourZustandSpeichern(tour) {
+  try {
+    sessionStorage.setItem(
+      tourSpeicherKeys[tour],
+      JSON.stringify(tourZustaende[tour])
+    );
+  } catch {
+    // Die Steuerung funktioniert auch ohne Browserspeicher.
+  }
+}
+
+function tourButton(text, aktion) {
+  const button = document.createElement("button");
+  button.type = "button";
+  button.className = "menuBtn";
+  button.textContent = text;
+  button.onclick = async () => {
+    button.disabled = true;
+    try {
+      await aktion();
+    } catch (error) {
+      alert(error.message);
+    } finally {
+      button.disabled = false;
+    }
+  };
+  return button;
+}
+
+async function tourSteuerungAnzeigen(tour, kunden, inhalt) {
+  const { data, error } = await supabaseClient.auth.getSession();
+  if (error) throw error;
+  if (!data.session) return;
+
+  const key = "weintour-steuerung-" +
+    data.session.user.id + "-" + tour;
+
+  if (tourSpeicherKeys[tour] !== key) {
+    tourSpeicherKeys[tour] = key;
+    let gespeichert = {};
+    try {
+      gespeichert = JSON.parse(sessionStorage.getItem(key)) || {};
+    } catch {}
+    tourZustaende[tour] = {
+      gestartet: gespeichert.gestartet === true,
+      pause: gespeichert.pause === true,
+      hotel: typeof gespeichert.hotel === "string"
+        ? gespeichert.hotel : "",
+      automatisch: gespeichert.automatisch !== false
+    };
+  }
+
+  const zustand = tourZustaende[tour];
+  const offen = kunden.filter(
+    kunde => kunde.geplant === true && kunde.erledigt !== true
+  );
+  const naechster = offen[0];
+
+  const steuerung = document.createElement("div");
+  steuerung.style.cssText =
+    "padding-bottom:20px;margin-bottom:16px;" +
+    "border-bottom:2px solid #ddd;";
+
+  const hinweis = document.createElement("p");
+  hinweis.className = "sub";
+  hinweis.textContent =
+    "Vorläufig alphabetisch – Google-Optimierung folgt. " +
+    offen.length + " ausgewählte Kunden noch offen.";
+  steuerung.appendChild(hinweis);
+
+  const autoLabel = document.createElement("label");
+  autoLabel.style.display = "block";
+  const auto = document.createElement("input");
+  auto.type = "checkbox";
+  auto.checked = zustand.automatisch;
+  auto.onchange = () => {
+    zustand.automatisch = auto.checked;
+    tourZustandSpeichern(tour);
+  };
+  autoLabel.append(
+    auto,
+    document.createTextNode(
+      " Nach „Erledigt“ automatisch Navigation öffnen"
+    )
+  );
+  steuerung.appendChild(autoLabel);
+
+  if (!zustand.gestartet || zustand.pause) {
+    steuerung.appendChild(tourButton(
+      zustand.pause ? "🚚 Tour fortsetzen" : "🚚 Tour starten",
+      async () => {
+        if (!naechster) {
+          throw new Error(
+            "Bitte zuerst mindestens einen offenen Kunden auswählen."
+          );
+        }
+        const adresse = kundenAdresse(naechster);
+        if (!adresse) {
+          throw new Error(
+            "Beim nächsten Kunden fehlen Straße oder Ort. " +
+            "Bitte die Adresse ergänzen."
+          );
+        }
+        zustand.gestartet = true;
+        zustand.pause = false;
+        tourZustandSpeichern(tour);
+        await kundenLaden(tour);
+        navigationStarten(adresse);
+      }
+    ));
+  }
+
+  if (zustand.gestartet && !zustand.pause) {
+    const info = document.createElement("div");
+    info.style.cssText =
+      "padding:16px;margin-top:12px;background:#f4f4f4;" +
+      "border-radius:12px;";
+    info.setAttribute("aria-live", "polite");
+
+    const titel = document.createElement("h3");
+    titel.textContent = naechster
+      ? "Nächster Kunde: " + naechster.name
+      : "✅ Alle ausgewählten Kunden erledigt";
+    info.appendChild(titel);
+
+    if (naechster) {
+      for (const text of [
+        naechster.ansprechpartner,
+        kundenAdresse(naechster),
+        naechster.telefon,
+        naechster.notiz
+      ]) {
+        if (!text) continue;
+        const zeile = document.createElement("p");
+        zeile.textContent = text;
+        zeile.style.whiteSpace = "pre-wrap";
+        info.appendChild(zeile);
+      }
+
+      const adresse = kundenAdresse(naechster);
+      if (adresse) {
+        info.appendChild(tourButton(
+          "📍 Zu diesem Kunden navigieren",
+          () => navigationStarten(adresse)
+        ));
+      } else {
+        const warnung = document.createElement("p");
+        warnung.textContent =
+          "Bitte Straße und Ort über „Bearbeiten“ ergänzen.";
+        info.appendChild(warnung);
+      }
+
+      info.appendChild(tourButton(
+        "✅ Erledigt – nächster Kunde",
+        async () => {
+          if (!confirm(
+            'Besuch bei "' + naechster.name + '" abschließen?'
+          )) return;
+
+          const { data: aktualisiert, error } =
+            await supabaseClient
+              .from("kunden")
+              .update({ erledigt: true })
+              .eq("id", naechster.id)
+              .select("id");
+
+          if (error) throw error;
+          if (!aktualisiert || !aktualisiert.length) {
+            throw new Error("Der Besuch konnte nicht gespeichert werden.");
+          }
+
+          // Nach erfolgreichem Speichern die offenen Kunden neu laden.
+          const { data: verbleibend, error: ladeFehler } =
+            await supabaseClient
+              .from("kunden")
+              .select("*")
+              .eq("tour", tour)
+              .eq("geplant", true)
+              .order("name");
+
+          if (ladeFehler) {
+            await kundenLaden(tour);
+            throw new Error(
+              "Besuch gespeichert. Nächster Kunde konnte nicht " +
+              "geladen werden: " + ladeFehler.message
+            );
+          }
+
+          const danach = verbleibend.find(
+            kunde => kunde.erledigt !== true
+          );
+
+          await kundenLaden(tour);
+
+          const ziel = danach ? kundenAdresse(danach) : ZUHAUSE;
+          if (danach && !ziel) {
+            throw new Error(
+              "Besuch gespeichert. Beim nächsten Kunden fehlt " +
+              "die vollständige Adresse."
+            );
+          }
+          if (zustand.automatisch) navigationStarten(ziel);
+        }
+      ));
+    } else {
+      info.appendChild(tourButton(
+        "🏠 Nach Hause navigieren",
+        () => navigationStarten(ZUHAUSE)
+      ));
+    }
+    steuerung.appendChild(info);
+  }
+
+  const hotelLabel = document.createElement("label");
+  hotelLabel.textContent = "Hoteladresse";
+  hotelLabel.style.cssText = "display:block;margin-top:20px;";
+
+  const hotel = document.createElement("input");
+  hotel.type = "text";
+  hotel.placeholder = "Straße, Hausnummer, PLZ und Ort";
+  hotel.value = zustand.hotel;
+  hotel.style.cssText =
+    "width:100%;padding:14px;font-size:17px;" +
+    "border:1px solid #ccc;border-radius:10px;margin-top:8px;";
+  hotel.oninput = () => {
+    zustand.hotel = hotel.value;
+    tourZustandSpeichern(tour);
+  };
+  hotelLabel.appendChild(hotel);
+  steuerung.appendChild(hotelLabel);
+
+  steuerung.appendChild(tourButton(
+    "🏨 Zum Hotel fahren – Tour pausieren",
+    async () => {
+      const adresse = hotel.value.trim();
+      if (!adresse) {
+        throw new Error("Bitte die vollständige Hoteladresse eingeben.");
+      }
+      zustand.hotel = adresse;
+      zustand.gestartet = true;
+      zustand.pause = true;
+      tourZustandSpeichern(tour);
+      await kundenLaden(tour);
+      navigationStarten(adresse);
+    }
+  ));
+
+  if (zustand.pause) {
+    const pause = document.createElement("p");
+    pause.textContent =
+      "Tour pausiert. Deine offenen Kunden bleiben ausgewählt. " +
+      "Am nächsten Morgen auf „Tour fortsetzen“ drücken.";
+    steuerung.appendChild(pause);
+  }
+
+  inhalt.appendChild(steuerung);
 }
     
 </script>    
