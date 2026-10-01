@@ -258,6 +258,56 @@ async function kundenLaden(tour) {
         eintrag.appendChild(zeile);
       }
 
+const planung = document.createElement("div");
+planung.style.cssText = "margin-top:12px;";
+
+const auswahlLabel = document.createElement("label");
+const auswahl = document.createElement("input");
+auswahl.type = "checkbox";
+auswahl.checked = kunde.geplant === true;
+auswahl.style.marginRight = "8px";
+
+auswahl.onchange = () => kundenStatusSpeichern(
+  kunde.id,
+  { geplant: auswahl.checked, erledigt: false },
+  tour,
+  auswahl
+);
+
+auswahlLabel.appendChild(auswahl);
+auswahlLabel.appendChild(
+  document.createTextNode("Für die nächste Fahrt auswählen")
+);
+planung.appendChild(auswahlLabel);
+
+if (kunde.geplant) {
+  const erledigtButton = document.createElement("button");
+  erledigtButton.type = "button";
+  erledigtButton.textContent = kunde.erledigt
+    ? "↩️ Wieder offen"
+    : "✅ Erledigt";
+  erledigtButton.style.cssText =
+    "display:block;margin-top:10px;padding:10px;cursor:pointer;";
+
+  erledigtButton.onclick = () => kundenStatusSpeichern(
+    kunde.id,
+    { erledigt: !kunde.erledigt },
+    tour,
+    erledigtButton
+  );
+
+  planung.appendChild(erledigtButton);
+}
+
+if (kunde.geplant && kunde.erledigt) {
+  const status = document.createElement("div");
+  status.textContent = "✅ Besuch erledigt";
+  status.style.cssText = "margin-top:8px;color:green;";
+  planung.appendChild(status);
+}
+
+eintrag.appendChild(planung);
+      
 const bearbeitenButton = document.createElement("button");
 bearbeitenButton.type = "button";
 bearbeitenButton.textContent = "✏️ Bearbeiten";
@@ -499,6 +549,33 @@ async function kundeAenderungSpeichern(id, button) {
   }
 }
 
+async function kundenStatusSpeichern(id, aenderung, tour, element) {
+  element.disabled = true;
+
+  try {
+    const { data, error } = await supabaseClient
+      .from("kunden")
+      .update(aenderung)
+      .eq("id", id)
+      .select("id");
+
+    if (error) throw error;
+
+    if (!data || data.length === 0) {
+      throw new Error("Der Status konnte nicht gespeichert werden.");
+    }
+
+    await kundenLaden(tour);
+  } catch (error) {
+    if (element.type === "checkbox") {
+      element.checked = !element.checked;
+    }
+
+    alert("Speichern fehlgeschlagen: " + error.message);
+  } finally {
+    element.disabled = false;
+  }
+}
     
 </script>    
 </body>
