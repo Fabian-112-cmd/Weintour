@@ -733,7 +733,14 @@
             button(
               k.erledigt ? "\u{21a9} Wieder offen" : "\u{2713} Erledigt",
               async () => {
-                await updateCustomer(k.id, { erledigt: !k.erledigt });
+                if (k.erledigt) {
+                  await updateCustomer(k.id, { erledigt: false });
+                } else {
+                  const notiz = prompt("Notiz zum Besuch (optional):", "");
+                  if (notiz === null) return;
+                  await updateCustomer(k.id, { erledigt: true,
+                    letzter_besuch: new Date().toISOString(), besuchsnotiz: notiz.trim() });
+                }
                 await loadCustomers(t);
               },
             ),
@@ -780,6 +787,15 @@
           c.append(p);
         }
         if (k.notiz) c.append(node("p", k.notiz, "note"));
+        if (k.letzter_besuch) {
+          const besuch = node("div", undefined, "note");
+          const datum = new Date(k.letzter_besuch);
+          besuch.append(node("strong", "Letzter Besuch: " +
+            (Number.isNaN(datum.getTime()) ? "Datum unbekannt" :
+             datum.toLocaleDateString("de-DE", { timeZone: "Europe/Berlin" }))));
+          besuch.append(node("p", k.besuchsnotiz || "Keine Besuchsnotiz hinterlegt."));
+          c.append(besuch);
+        }
       }
       async function updateCustomer(id, change) {
         const { data, error } = await supabaseClient
@@ -837,6 +853,13 @@
           );
           customerDetails(panel, next);
           documents(panel, next, t, true);
+          const besuchsLabel = node("label", "Notiz zum heutigen Besuch (optional)");
+          const besuchsNotiz = node("textarea");
+          besuchsNotiz.rows = 3;
+          besuchsNotiz.maxLength = 4000;
+          besuchsNotiz.placeholder = "Zum Beispiel: Nachbestellung besprochen, Kunde nicht angetroffen ...";
+          besuchsLabel.append(besuchsNotiz);
+          if (s.gestartet && !s.pause) panel.append(besuchsLabel);
           const actions = node("div", undefined, "actions");
           if (!s.gestartet || s.pause) {
             actions.append(
@@ -878,7 +901,7 @@
             actions.append(
               button(
                 "\u{2713} Erledigt \u{b7} n\u{e4}chster Kunde",
-                () => completeVisit(t, next),
+                () => completeVisit(t, next, besuchsNotiz.value),
                 "success",
               ),
             );
@@ -952,12 +975,12 @@
       // ============================================================
       // BESUCH ABSCHLIESSEN UND WEITERFAHREN
       // ============================================================
-      async function completeVisit(t, k) {
+      async function completeVisit(t, k, notiz = "") {
         if (!confirm('Besuch bei "' + k.name + '" abschlie\u{df}en?')) return;
         const s = state(t),
           tab = s.automatisch ? reserveMap() : null;
         try {
-          await updateCustomer(k.id, { erledigt: true });
+          await updateCustomer(k.id, { erledigt: true, letzter_besuch: new Date().toISOString(), besuchsnotiz: notiz.trim() });
           let latest;
           try {
             latest = await loadCustomers(t);
