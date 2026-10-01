@@ -8,6 +8,9 @@
     />
     <meta name="theme-color" content="#f5f3f7" />
     <title>Weintour</title>
+<link rel="icon" type="image/png" href="weintour-logo.png">
+<link rel="apple-touch-icon" href="weintour-logo.png">
+    <!-- DARSTELLUNG: Farben, Abstaende und mobile Ansicht -->
     <style>
       * {
         box-sizing: border-box;
@@ -293,16 +296,17 @@
     </style>
   </head>
   <body>
+    <!-- OBERFLAECHE: Anmeldung, Startseite und Touransicht -->
     <main class="wrap">
       <header>
-        <h1>&#127815; Weintour</h1>
+        <h1 style="display:flex;align-items:center;gap:12px;"><img src="weintour-logo.png" alt="" width="48" height="48" style="border-radius:12px;">Weintour</h1>
         <button id="logout" hidden>Abmelden</button>
       </header>
       <section id="login" class="card">
         <h2>Anmelden</h2>
         <form id="loginForm" class="form">
           <label
-            >E-Mail<input id="email" type="email" autocomplete="username" required
+            >Benutzername<input id="username" type="text" autocomplete="username" autocapitalize="none" spellcheck="false" required
           /></label>
           <label
             >Passwort<input
@@ -319,15 +323,15 @@
         <section id="home">
           <button class="menu" data-page="kunde">
             <strong>&#10133; Kunde anlegen</strong
-            ><small>Adresse, Kontakt und Tour hinterlegen</small>
+            >
           </button>
           <button class="menu" data-page="muenchen">
             <strong>&#128666; M&#252;nchen-Tour</strong
-            ><small>Kunden im S&#252;den planen und besuchen</small>
+            >
           </button>
           <button class="menu" data-page="berlin">
             <strong>&#128666; Berlin-Tour</strong
-            ><small>Kunden im Norden planen und besuchen</small>
+            >
           </button>
         </section>
         <section id="page" hidden>
@@ -355,6 +359,9 @@
         views = {},
         searches = {},
         filters = {};
+      // ============================================================
+      // HILFSFUNKTIONEN: sichere Texte und Schaltflaechen
+      // ============================================================
       function node(tag, text, cls) {
         const e = document.createElement(tag);
         if (text !== undefined) e.textContent = text;
@@ -376,6 +383,9 @@
         };
         return b;
       }
+      // ============================================================
+      // ADRESSEN UND GESPEICHERTER TOURSTATUS
+      // ============================================================
       function address(k) {
         return k.strasse && k.ort
           ? [k.strasse, k.plz, k.ort, "Deutschland"].filter(Boolean).join(", ")
@@ -407,6 +417,9 @@
           );
         } catch {}
       }
+      // ============================================================
+      // GOOGLE-MAPS-NAVIGATION
+      // ============================================================
       function mobile() {
         return (
           /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) ||
@@ -437,6 +450,9 @@
           link.remove();
         }
       }
+      // ============================================================
+      // ANMELDUNG UND SEITENWECHSEL
+      // ============================================================
       function showHome() {
         loadVersion++;
         page = null;
@@ -457,6 +473,15 @@
         $("app").hidden = !session;
         $("logout").hidden = !session;
       }
+      function loginAdresse(eingabe) {
+        const name = eingabe.trim().toLowerCase();
+        if (name.includes("@")) return name;
+        if (name === "fabian") return "fabian-112@t-online.de";
+        if (!/^[a-z0-9][a-z0-9._-]{1,39}$/.test(name)) {
+          throw new Error("Bitte einen Benutzernamen mit 2 bis 40 Zeichen eingeben (Buchstaben, Zahlen, Punkt, Unterstrich oder Bindestrich).");
+        }
+        return name + "@weintour.example.com";
+      }
       $("loginForm").onsubmit = async (e) => {
         e.preventDefault();
         const b = e.target.querySelector("button");
@@ -464,7 +489,7 @@
         $("loginMessage").textContent = "Anmeldung l\u{e4}uft \u{2026}";
         try {
           const { data, error } = await supabaseClient.auth.signInWithPassword({
-            email: $("email").value.trim(),
+            email: loginAdresse($("username").value),
             password: $("password").value,
           });
           if (error) throw error;
@@ -515,6 +540,9 @@
           );
         }
       }
+      // ============================================================
+      // KUNDEN LADEN UND TOURANSICHT
+      // ============================================================
       async function loadCustomers(t) {
         const version = ++loadVersion,
           uid = userId;
@@ -561,6 +589,9 @@
         if (views[t] === "planung") renderPlan(t, c);
         else renderDrive(t, c, selected);
       }
+      // ============================================================
+      // PLANUNG: Suche, Filter und Kundenauswahl
+      // ============================================================
       function renderPlan(t, c) {
         const tools = node("div", undefined, "card form");
         const search = node("input");
@@ -634,6 +665,9 @@
         };
         draw();
       }
+      // ============================================================
+      // KUNDENKARTEN: Kontakt, Bearbeiten und Loeschen
+      // ============================================================
       function customerCard(k, t) {
         const card = node("article", undefined, "customer");
         const head = node("div", undefined, "customer-head");
@@ -757,6 +791,9 @@
         if (!data?.length)
           throw new Error("\u{c4}nderung konnte nicht gespeichert werden.");
       }
+      // ============================================================
+      // AKTIVE TOUR: naechster Kunde und Fortschritt
+      // ============================================================
       function renderDrive(t, c, selected) {
         const s = state(t),
           open = selected.filter((k) => !k.erledigt),
@@ -912,6 +949,9 @@
           c.append(upcoming);
         }
       }
+      // ============================================================
+      // BESUCH ABSCHLIESSEN UND WEITERFAHREN
+      // ============================================================
       async function completeVisit(t, k) {
         if (!confirm('Besuch bei "' + k.name + '" abschlie\u{df}en?')) return;
         const s = state(t),
@@ -943,6 +983,9 @@
           throw e;
         }
       }
+      // ============================================================
+      // HOTEL UND TOURPAUSE
+      // ============================================================
       function renderHotel(t, c) {
         const s = state(t),
           box = node("details", undefined, "card hotel");
@@ -990,6 +1033,9 @@
         );
         c.append(box);
       }
+      // ============================================================
+      // KUNDEN ANLEGEN UND BEARBEITEN
+      // ============================================================
       function customerForm(k = null, defaultTour = "") {
         const form = node("form", undefined, "card form"),
           fields = {};
@@ -1064,6 +1110,9 @@
         };
         $("content").replaceChildren(form);
       }
+      // ============================================================
+      // LIEFERSCHEINE: Hochladen und Oeffnen
+      // ============================================================
       function documents(container, k, t, compact = false) {
         const box = node("div", undefined, "document"),
           msg = node(
@@ -1162,6 +1211,9 @@
         container.append(box);
       }
 
+      // ============================================================
+      // TOUR ZURUECKSETZEN: zwei Bestaetigungen
+      // ============================================================
       async function resetTour(t) {
         if (
           !confirm(
