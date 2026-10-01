@@ -213,6 +213,8 @@ if (typ === "muenchen" || typ === "berlin") {
 }
 }
 
+const tourFilter = {};
+    
 async function kundenLaden(tour) {
   const inhalt = document.getElementById("bereichInhalt");
   inhalt.textContent = "Kunden werden geladen …";
@@ -228,12 +230,40 @@ async function kundenLaden(tour) {
 
     inhalt.replaceChildren();
 
+  const filterButton = document.createElement("button");
+filterButton.type = "button";
+filterButton.className = "menuBtn";
+filterButton.textContent = tourFilter[tour]
+  ? "Alle Kunden anzeigen"
+  : "Nur ausgewählte Kunden anzeigen";
+
+filterButton.onclick = () => {
+  tourFilter[tour] = !tourFilter[tour];
+  kundenLaden(tour);
+};
+
+inhalt.appendChild(filterButton);
+
+const anzahl = data.filter(kunde => kunde.geplant === true).length;
+const zusammenfassung = document.createElement("p");
+zusammenfassung.textContent =
+  anzahl + " Kunden für die Fahrt ausgewählt";
+inhalt.appendChild(zusammenfassung);
+
+if (tourFilter[tour] && anzahl === 0) {
+  const hinweis = document.createElement("p");
+  hinweis.textContent = "Noch keine Kunden für die Fahrt ausgewählt.";
+  inhalt.appendChild(hinweis);
+  return;
+}
+
     if (data.length === 0) {
       inhalt.textContent = "Für diese Tour sind noch keine Kunden gespeichert.";
       return;
     }
 
-    for (const kunde of data) {
+    for (const kunde of data) 
+    if (tourFilter[tour] && kunde.geplant !== true) continue;
       const eintrag = document.createElement("div");
       eintrag.style.cssText =
         "padding:16px 0;border-bottom:1px solid #ddd;";
