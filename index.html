@@ -338,7 +338,7 @@ if (kunde.geplant && kunde.erledigt) {
 
 eintrag.appendChild(planung);
 
-f (kunde.strasse && kunde.ort) {
+if (kunde.strasse && kunde.ort) {
   const adresse = [
     kunde.strasse,
     kunde.plz,
