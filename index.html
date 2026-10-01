@@ -262,7 +262,7 @@ if (tourFilter[tour] && anzahl === 0) {
       return;
     }
 
-    for (const kunde of data) 
+    for (const kunde of data) {
     if (tourFilter[tour] && kunde.geplant !== true) continue;
       const eintrag = document.createElement("div");
       eintrag.style.cssText =
