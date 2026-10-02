@@ -433,6 +433,8 @@
             pause: s.pause === true,
             hotel: typeof s.hotel === "string" ? s.hotel : "",
             automatisch: s.automatisch !== false,
+            bestaetigteAuswahl: typeof s.bestaetigteAuswahl === "string" ? s.bestaetigteAuswahl : "",
+            uebersicht: s.uebersicht === true,
           };
         }
         return states[t];
@@ -658,6 +660,55 @@
       // ============================================================
       // PLANUNG: Suche, Filter und Kundenauswahl
       // ============================================================
+      function auswahlSignatur(t) {
+        return rows.filter(k => k.geplant).map(k => String(k.id)).sort().join(",");
+      }
+      function auswahlBestaetigt(t) {
+        return !!auswahlSignatur(t) && state(t).bestaetigteAuswahl === auswahlSignatur(t);
+      }
+      function renderPlanSteps(t, c) {
+        const box = node("section", undefined, "card");
+        box.append(node("h3", "N\u{e4}chste Tour vorbereiten"));
+        box.append(node("p", "1. Kunden ausw\u{e4}hlen und best\u{e4}tigen. 2. Beladeangaben erg\u{e4}nzen. 3. Sortieren und Reihenfolge pr\u{fc}fen.", "muted"));
+        box.append(button(auswahlBestaetigt(t) ? "Auswahl erneut best\u{e4}tigen" : "Auswahl best\u{e4}tigen", () => {
+          const selected = rows.filter(k => k.geplant);
+          if (!selected.length) throw new Error("Bitte zuerst Kunden ausw\u{e4}hlen.");
+          if (!confirm(selected.length + " Kunden f\u{fc}r die n\u{e4}chste Tour best\u{e4}tigen?")) return;
+          state(t).bestaetigteAuswahl = auswahlSignatur(t);
+          state(t).uebersicht = false;
+          saveState(t);
+          filters[t] = "auswahl";
+          searches[t] = "";
+          renderTour(t);
+        }));
+        if (auswahlBestaetigt(t)) box.append(node("p", "Auswahl best\u{e4}tigt. Jetzt unter Bearbeiten die fehlenden Angaben erg\u{e4}nzen.", "muted"));
+        box.append(button("Sortieren & \u{dc}bersicht", () => {
+          if (!auswahlBestaetigt(t)) throw new Error("Bitte zuerst die aktuelle Kundenauswahl best\u{e4}tigen.");
+          const offen = rows.filter(k => k.geplant && !k.erledigt);
+          const fehlen = offen.filter(k => fehlendeBeladung(k).length);
+          if (fehlen.length) throw new Error("Bitte zuerst erg\u{e4}nzen:\n\n" + fehlen.map(k => k.name + ": " + fehlendeBeladung(k).join(", ")).join("\n"));
+          state(t).uebersicht = true;
+          saveState(t);
+          renderTour(t);
+        }, "primary"));
+        if (auswahlBestaetigt(t) && state(t).uebersicht) {
+          box.append(node("h3", "Reihenfolge nach Kartonnummer"));
+          const stops = lieferStopps(rows);
+          if (!stops.length) box.append(node("p", "Keine offenen Lieferungen."));
+          for (const [index, stop] of stops.entries()) {
+            const zeile = node("div", undefined, "delivery-item");
+            zeile.append(node("strong", (index + 1) + ". Halt: " + stop.host.name));
+            zeile.append(node("p", address(stop.host) || "Lieferadresse fehlt", "muted"));
+            for (const k of stop.lieferungen) zeile.append(node("p", "Nr. " + (k.kartonnummer || "?") + " \u{b7} " + k.name + " \u{b7} " + (k.paketanzahl ?? "?") + " Pakete \u{b7} " + (lagerorte[k.lagerort] || "Lagerort fehlt"), "muted"));
+            box.append(zeile);
+          }
+          box.append(button("Weiter zum Tourstart", () => {
+            views[t] = "fahrt";
+            renderTour(t);
+          }, "primary"));
+        }
+        c.append(box);
+      }
       function renderPlan(t, c) {
         const tools = node("div", undefined, "card form");
         const search = node("input");
@@ -689,6 +740,7 @@
           }),
         );
         c.append(tools);
+        renderPlanSteps(t, c);
         const list = node("div");
         c.append(list);
         function draw() {
@@ -758,7 +810,6 @@
         check.onchange = async () => {
           check.disabled = true;
           try {
-            if (check.checked) pruefeBeladung(k);
             await updateCustomer(k.id, { geplant: check.checked, erledigt: false });
             await loadCustomers(t);
           } catch (e) {
@@ -785,6 +836,9 @@
               k.erledigt ? "pill done" : "pill",
             ),
           );
+        if (k.geplant && !k.erledigt && fehlendeBeladung(k).length) {
+          card.append(node("p", "Vor Tourstart ergaenzen: " + fehlendeBeladung(k).join(", "), "alert"));
+        }
         const detail = node("details");
         detail.append(node("summary", "Kontakt, Lieferschein & Bearbeiten"));
         customerDetails(detail, k);
@@ -840,18 +894,22 @@
         return card;
       }
       const lagerorte = { L: "Links", R: "Rechts", H: "Hinten", A: "H\u{e4}nger" };
-      // Beladeangaben sind fuer ausgewaehlte Kunden Pflicht.
+      // Erst beim Tourstart muessen die Beladeangaben vollstaendig sein.
       // Ein Lieferschein bleibt freiwillig.
-      function pruefeBeladung(k) {
+      function fehlendeBeladung(k) {
         const fehlt = [];
         if (!nummerGueltig(k.kartonnummer))
           fehlt.push("Kartonnummer");
         if (!Number.isInteger(k.paketanzahl) || k.paketanzahl < 0 || k.paketanzahl > 100000)
           fehlt.push("Paketanzahl");
         if (!Object.hasOwn(lagerorte, k.lagerort || "")) fehlt.push("Lagerort");
+        return fehlt;
+      }
+      function pruefeBeladung(k) {
+        const fehlt = fehlendeBeladung(k);
         if (fehlt.length) throw new Error(
           (k.name || "Dieser Kunde") + ": Es fehlen g\u{fc}ltige Angaben f\u{fc}r " +
-          fehlt.join(", ") + ". Bitte unter Bearbeiten erg\u{e4}nzen und danach ausw\u{e4}hlen."
+          fehlt.join(", ") + ". Bitte unter Bearbeiten vor dem Tourstart erg\u{e4}nzen."
         );
       }
       function paketInfo(k) {
@@ -971,7 +1029,13 @@
               button(
                 s.pause ? "\u{1f69a} Tour fortsetzen" : "\u{1f69a} Tour starten",
                 async () => {
-                  for (const kunde of open) pruefeBeladung(kunde);
+                  if (!auswahlBestaetigt(t)) throw new Error("Bitte zuerst in der Planung die Kundenauswahl bestaetigen.");
+                  const unvollstaendig = open.filter(k => fehlendeBeladung(k).length);
+                  if (unvollstaendig.length) throw new Error(
+                    "Bitte vor dem Tourstart ergaenzen:\n\n" + unvollstaendig.map(k =>
+                      k.name + ": " + fehlendeBeladung(k).join(", ")
+                    ).join("\n")
+                  );
                   const a = address(next);
                   if (!a)
                     throw new Error(
@@ -1266,7 +1330,6 @@
               throw new Error("Bitte einen Lagerort aus der Liste auswaehlen.");
             if (k && values.tour !== k.tour && rows.some(x => String(x.abgeben_bei_id) === String(k.id)))
               throw new Error("Bitte zuerst die zugeordneten Lieferungen entfernen, bevor die Tour dieser Abgabeadresse geaendert wird.");
-            if (k?.geplant && !k.erledigt) pruefeBeladung(values);
             if (k) await updateCustomer(k.id, values);
             else {
               const { error } = await supabaseClient.from("kunden").insert([values]);
@@ -1446,6 +1509,8 @@
         s.gestartet = false;
         s.pause = false;
         s.hotel = "";
+        s.bestaetigteAuswahl = "";
+        s.uebersicht = false;
         saveState(t);
         views[t] = "planung";
         await loadCustomers(t);
