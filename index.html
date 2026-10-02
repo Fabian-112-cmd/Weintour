@@ -476,7 +476,7 @@
       function loginAdresse(eingabe) {
         const name = eingabe.trim().toLowerCase();
         if (name.includes("@")) return name;
-        if (name === "fabian") return "fabian-112@t-online.de";
+        if (name === "weintour") return "fabian-112@t-online.de";
         if (!/^[a-z0-9][a-z0-9._-]{1,39}$/.test(name)) {
           throw new Error("Bitte einen Benutzernamen mit 2 bis 40 Zeichen eingeben (Buchstaben, Zahlen, Punkt, Unterstrich oder Bindestrich).");
         }
