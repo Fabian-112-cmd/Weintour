@@ -242,18 +242,45 @@
         flex: 1;
         text-align: center;
       }
-      .document {
-        margin: 16px 0;
-        padding: 12px;
+      .load-info {
+        display: table;
+        max-width: 100%;
+        margin: 8px 0 12px;
+        padding: 5px 9px;
+        border-radius: 8px;
         background: #f5f3f7;
-        border-radius: 12px;
+        font-size: 14px;
+        line-height: 1.5;
       }
-      .document p {
-        margin: 4px 0 10px;
+      .customer-phone { margin: 6px 0 10px; }
+      .customer-phone a { font-weight: 600; }
+      .document {
+        margin: 12px 0;
+        padding: 8px 10px;
+        background: #f5f3f7;
+        border-radius: 10px;
       }
-      .document details {
-        margin-top: 8px;
+      .document-row {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 6px 10px;
+        font-size: 14px;
       }
+      .document-row button {
+        min-height: 36px;
+        padding: 6px 10px;
+        font-size: 14px;
+        width: auto;
+      }
+      .document-status { margin-right: auto; }
+      .document p { margin: 8px 0; }
+      .document-upload {
+        margin-top: 10px;
+        padding-top: 10px;
+        border-top: 1px solid var(--line);
+      }
+      .document-upload input { max-width: 100%; }
       .hotel {
         margin-top: 18px;
       }
@@ -709,7 +736,7 @@
         };
         head.append(text, label);
         card.append(head);
-        if (paketInfo(k)) card.append(node("p", paketInfo(k), "muted"));
+        if (paketInfo(k)) card.append(node("p", paketInfo(k), "load-info"));
         if (k.geplant)
           card.append(
             node(
@@ -745,7 +772,7 @@
                 } else {
                   const notiz = prompt("Notiz zum Besuch (optional):", "");
                   if (notiz === null) return;
-                  await updateCustomer(k.id, { erledigt: true,
+                  await updateCustomer(k.id, { erledigt: true, lieferschein_pfad: null,
                     letzter_besuch: new Date().toISOString(), besuchsnotiz: notiz.trim() });
                 }
                 await loadCustomers(t);
@@ -783,7 +810,14 @@
         return teile.join(" \u{b7} ");
       }
       function customerDetails(c, k) {
-        if (paketInfo(k)) c.append(node("p", paketInfo(k), "pill"));
+        if (k.telefon) {
+          const p = node("p", undefined, "customer-phone"),
+            a = node("a", "\u{260e} " + k.telefon);
+          a.href = "tel:" + k.telefon.replace(/[^+\d]/g, "");
+          p.append(a);
+          c.append(p);
+        }
+        if (paketInfo(k)) c.append(node("p", paketInfo(k), "load-info"));
         if (k.ansprechpartner) c.append(node("p", k.ansprechpartner));
         if (k.strasse)
           c.append(
@@ -795,13 +829,6 @@
               "note",
             ),
           );
-        if (k.telefon) {
-          const p = node("p"),
-            a = node("a", "\u{260e} " + k.telefon, "btn");
-          a.href = "tel:" + k.telefon.replace(/[^+\d]/g, "");
-          p.append(a);
-          c.append(p);
-        }
         if (k.notiz) c.append(node("p", k.notiz, "note"));
         if (k.letzter_besuch) {
           const besuch = node("div", undefined, "note");
@@ -996,7 +1023,7 @@
         const s = state(t),
           tab = s.automatisch ? reserveMap() : null;
         try {
-          await updateCustomer(k.id, { erledigt: true, letzter_besuch: new Date().toISOString(), besuchsnotiz: notiz.trim() });
+          await updateCustomer(k.id, { erledigt: true, lieferschein_pfad: null, letzter_besuch: new Date().toISOString(), besuchsnotiz: notiz.trim() });
           let latest;
           try {
             latest = await loadCustomers(t);
@@ -1173,19 +1200,19 @@
       // LIEFERSCHEINE: Hochladen und Oeffnen
       // ============================================================
       function documents(container, k, t, compact = false) {
-        const box = node("div", undefined, "document"),
-          msg = node(
-            "p",
-            k.lieferschein_pfad
-              ? "\u{1f4c4} Lieferschein hinterlegt"
-              : "Noch kein Lieferschein hinterlegt.",
-            "muted",
-          );
+        const box = node("div", undefined, "document");
+        const row = node("div", undefined, "document-row");
+        const status = node("span", k.lieferschein_pfad
+          ? "\u{1f4c4} Lieferschein vorhanden"
+          : "Kein aktueller Lieferschein", "document-status");
+        const msg = node("p", undefined, "muted");
         msg.setAttribute("role", "status");
-        box.append(msg);
+        msg.hidden = true;
+        row.append(status);
+        box.append(row, msg);
         if (k.lieferschein_pfad)
-          box.append(
-            button("\u{1f4c4} Lieferschein \u{f6}ffnen", async () => {
+          row.append(
+            button("\u{f6}ffnen", async () => {
               const tab = window.open("about:blank", "_blank");
               if (tab) tab.opener = null;
               try {
@@ -1199,21 +1226,50 @@
                   a.href = data.signedUrl;
                   a.target = "_blank";
                   a.rel = "noopener noreferrer";
+                  msg.hidden = false;
                   msg.replaceChildren(a);
                 }
               } catch (e) {
                 if (tab) tab.close();
+                msg.hidden = false;
                 msg.textContent = "\u{d6}ffnen fehlgeschlagen: " + e.message;
               }
             }),
           );
-        const uploadArea = node("details");
-        uploadArea.append(
-          node(
-            "summary",
-            k.lieferschein_pfad ? "Lieferschein ersetzen" : "Lieferschein hochladen",
-          ),
-        );
+        if (k.letzter_lieferschein_pfad)
+          row.append(
+            button("Letzten \u{f6}ffnen", async () => {
+              const tab = window.open("about:blank", "_blank");
+              if (tab) tab.opener = null;
+              try {
+                const { data, error } = await supabaseClient.storage
+                  .from("lieferschein")
+                  .createSignedUrl(k.letzter_lieferschein_pfad, 600);
+                if (error) throw error;
+                if (tab && !tab.closed) tab.location.replace(data.signedUrl);
+                else {
+                  const a = node("a", "Lieferschein hier \u{f6}ffnen", "btn");
+                  a.href = data.signedUrl;
+                  a.target = "_blank";
+                  a.rel = "noopener noreferrer";
+                  msg.hidden = false;
+                  msg.replaceChildren(a);
+                }
+              } catch (e) {
+                if (tab) tab.close();
+                msg.hidden = false;
+                msg.textContent = "\u{d6}ffnen fehlgeschlagen: " + e.message;
+              }
+            }),
+          );
+        const uploadArea = node("div", undefined, "document-upload");
+        uploadArea.hidden = true;
+        const toggle = button(k.lieferschein_pfad ? "Ersetzen" : "Hochladen", () => {
+          uploadArea.hidden = !uploadArea.hidden;
+          toggle.setAttribute("aria-expanded", String(!uploadArea.hidden));
+        });
+        toggle.setAttribute("aria-expanded", "false");
+        row.append(toggle);
         const file = node("input");
         file.type = "file";
         file.accept = ".pdf,.jpg,.jpeg,.png,.webp";
@@ -1245,6 +1301,7 @@
           )
             return;
           file.disabled = true;
+          msg.hidden = false;
           msg.textContent = "Lieferschein wird hochgeladen \u{2026}";
           try {
             const { data: auth, error: ae } = await supabaseClient.auth.getUser();
@@ -1278,21 +1335,21 @@
           !confirm(
             names[t] +
               " zur\u{fc}cksetzen?\n\n" +
-              "Alle Kundenauswahlen und Erledigt-Markierungen dieser Tour werden zur\u{fc}ckgesetzt.\n\n" +
-              "Kundendaten und Lieferscheine bleiben erhalten.",
+              "Alle Kundenauswahlen und Erledigt-Markierungen dieser Tour werden zur\u{fc}ckgesetzt. Auch Kartonnummern, Paketanzahlen und Lagerorte werden geleert.\n\n" +
+              "Namen, Adressen, Kontakte, Notizen und letzte Besuche bleiben erhalten. Aktuelle Lieferscheine werden als letzter Lieferschein archiviert.",
           )
         )
           return;
         if (
           !confirm(
             "Sind Sie wirklich sicher?\n\n" +
-              "Die bisherige Besuchsmarkierung wird gel\u{f6}scht. Die n\u{e4}chste Tour kann danach neu geplant werden.",
+              "Auswahl, Erledigt-Markierungen und die Beladeangaben aller Kunden dieser Tour werden zur\u{fc}ckgesetzt. Bitte Kartonnummer, Paketanzahl und Lagerort vor der n\u{e4}chsten Fahrt neu eintragen.",
           )
         )
           return;
         const { data, error } = await supabaseClient
           .from("kunden")
-          .update({ geplant: false, erledigt: false })
+          .update({ geplant: false, erledigt: false, kartonnummer: null, paketanzahl: null, lagerort: null, lieferschein_pfad: null })
           .eq("tour", t)
           .select("id");
         if (error) throw error;
