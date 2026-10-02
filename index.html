@@ -577,7 +577,8 @@
           .from("kunden")
           .select("*")
           .eq("tour", t)
-          .order("name");
+          .order("kartonnummer", { ascending: true, nullsFirst: false })
+          .order("id", { ascending: true });
         if (error) throw error;
         if (version !== loadVersion || page !== t || uid !== userId) return null;
         rows = data || [];
@@ -725,6 +726,7 @@
         check.onchange = async () => {
           check.disabled = true;
           try {
+            if (check.checked) pruefeBeladung(k);
             await updateCustomer(k.id, { geplant: check.checked, erledigt: false });
             await loadCustomers(t);
           } catch (e) {
@@ -802,6 +804,20 @@
         return card;
       }
       const lagerorte = { L: "Links", R: "Rechts", H: "Hinten", A: "H\u{e4}nger" };
+      // Beladeangaben sind fuer ausgewaehlte Kunden Pflicht.
+      // Ein Lieferschein bleibt freiwillig.
+      function pruefeBeladung(k) {
+        const fehlt = [];
+        if (!Number.isInteger(k.kartonnummer) || k.kartonnummer < 1 || k.kartonnummer > 100000)
+          fehlt.push("Kartonnummer");
+        if (!Number.isInteger(k.paketanzahl) || k.paketanzahl < 0 || k.paketanzahl > 100000)
+          fehlt.push("Paketanzahl");
+        if (!Object.hasOwn(lagerorte, k.lagerort || "")) fehlt.push("Lagerort");
+        if (fehlt.length) throw new Error(
+          (k.name || "Dieser Kunde") + ": Es fehlen g\u{fc}ltige Angaben f\u{fc}r " +
+          fehlt.join(", ") + ". Bitte unter Bearbeiten erg\u{e4}nzen und danach ausw\u{e4}hlen."
+        );
+      }
       function paketInfo(k) {
         const teile = [];
         if (k.kartonnummer != null) teile.push("Kartonnummer: " + k.kartonnummer);
@@ -859,7 +875,7 @@
           next = open[0];
         const panel = node("section", undefined, "card current");
         panel.append(
-          node("p", "Reihenfolge: alphabetisch. Google-Optimierung folgt.", "muted"),
+          node("p", "Reihenfolge: nach Kartonnummer. Google-Optimierung folgt.", "muted"),
         );
         if (selected.length) {
           const progress = node("progress", undefined, "progress");
@@ -909,6 +925,7 @@
               button(
                 s.pause ? "\u{1f69a} Tour fortsetzen" : "\u{1f69a} Tour starten",
                 async () => {
+                  for (const kunde of open) pruefeBeladung(kunde);
                   const a = address(next);
                   if (!a)
                     throw new Error(
@@ -1008,7 +1025,7 @@
           upcoming.append(
             node(
               "p",
-              "Direkte Navigation \u{e4}ndert die alphabetische Reihenfolge nicht.",
+              "Direkte Navigation \u{e4}ndert die Reihenfolge nach Kartonnummer nicht.",
               "muted",
             ),
           );
@@ -1181,6 +1198,7 @@
               throw new Error("Bitte eine ganze Paketanzahl zwischen 0 und 100000 eingeben.");
             if (values.lagerort && !Object.hasOwn(lagerorte, values.lagerort))
               throw new Error("Bitte einen Lagerort aus der Liste auswaehlen.");
+            if (k?.geplant && !k.erledigt) pruefeBeladung(values);
             if (k) await updateCustomer(k.id, values);
             else {
               const { error } = await supabaseClient.from("kunden").insert([values]);
