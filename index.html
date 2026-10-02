@@ -281,6 +281,7 @@
         border-top: 1px solid var(--line);
       }
       .document-upload input { max-width: 100%; }
+      .delivery-item { padding: 12px 0; border-top: 1px solid var(--line); }
       .hotel {
         margin-top: 18px;
       }
@@ -570,6 +571,37 @@
       // ============================================================
       // KUNDEN LADEN UND TOURANSICHT
       // ============================================================
+      // Kartonnummern werden abschnittsweise sortiert: 4, 4.1, 4.2, 4.10, 5.
+      function nummerGueltig(value) {
+        return /^[1-9]\d*(?:\.[1-9]\d*)?$/.test(String(value ?? ""));
+      }
+      function nummerVergleich(a, b) {
+        const x = String(a.kartonnummer || "").split(".").map(Number);
+        const y = String(b.kartonnummer || "").split(".").map(Number);
+        if (!a.kartonnummer) return b.kartonnummer ? 1 : Number(a.id) - Number(b.id);
+        if (!b.kartonnummer) return -1;
+        for (let i = 0; i < Math.max(x.length, y.length); i++) {
+          if (i >= x.length) return -1;
+          if (i >= y.length) return 1;
+          if (x[i] !== y[i]) return x[i] - y[i];
+        }
+        return Number(a.id) - Number(b.id);
+      }
+      function lieferStopps(kunden) {
+        const gruppen = new Map();
+        for (const kunde of kunden.filter(k => k.geplant && !k.erledigt)) {
+          const host = kunde.abgeben_bei_id
+            ? kunden.find(k => String(k.id) === String(kunde.abgeben_bei_id))
+            : kunde;
+          if (!host) throw new Error("Abgabeadresse fehlt bei " + kunde.name);
+          const key = String(host.id);
+          if (!gruppen.has(key)) gruppen.set(key, { host, lieferungen: [] });
+          gruppen.get(key).lieferungen.push(kunde);
+        }
+        const stops = [...gruppen.values()];
+        for (const stop of stops) stop.lieferungen.sort(nummerVergleich);
+        return stops.sort((a, b) => nummerVergleich(a.lieferungen[0], b.lieferungen[0]));
+      }
       async function loadCustomers(t) {
         const version = ++loadVersion,
           uid = userId;
@@ -581,7 +613,7 @@
           .order("id", { ascending: true });
         if (error) throw error;
         if (version !== loadVersion || page !== t || uid !== userId) return null;
-        rows = data || [];
+        rows = (data || []).sort(nummerVergleich);
         renderTour(t);
         return rows;
       }
@@ -738,6 +770,10 @@
         };
         head.append(text, label);
         card.append(head);
+        if (k.abgeben_bei_id) {
+          const host = rows.find(x => String(x.id) === String(k.abgeben_bei_id));
+          card.append(node("p", "Abgeben bei: " + (host?.name || "Zuordnung pr\u{fc}fen"), "muted"));
+        }
         if (paketInfo(k)) card.append(node("p", paketInfo(k), "load-info"));
         if (k.geplant)
           card.append(
@@ -808,7 +844,7 @@
       // Ein Lieferschein bleibt freiwillig.
       function pruefeBeladung(k) {
         const fehlt = [];
-        if (!Number.isInteger(k.kartonnummer) || k.kartonnummer < 1 || k.kartonnummer > 100000)
+        if (!nummerGueltig(k.kartonnummer))
           fehlt.push("Kartonnummer");
         if (!Number.isInteger(k.paketanzahl) || k.paketanzahl < 0 || k.paketanzahl > 100000)
           fehlt.push("Paketanzahl");
@@ -872,7 +908,9 @@
       function renderDrive(t, c, selected) {
         const s = state(t),
           open = selected.filter((k) => !k.erledigt),
-          next = open[0];
+          stopps = lieferStopps(rows),
+          stopp = stopps[0],
+          next = stopp?.host;
         const panel = node("section", undefined, "card current");
         panel.append(
           node("p", "Reihenfolge: nach Kartonnummer. Google-Optimierung folgt.", "muted"),
@@ -910,8 +948,16 @@
             ),
             node("h3", next.name),
           );
-          customerDetails(panel, next);
-          documents(panel, next, t, true);
+          const adresseKunde = { ...next, kartonnummer: null, paketanzahl: null, lagerort: null };
+          customerDetails(panel, adresseKunde);
+          panel.append(node("p", "Lieferungen an dieser Adresse: " + stopp.lieferungen.length, "muted"));
+          for (const lieferung of stopp.lieferungen) {
+            const block = node("section", undefined, "delivery-item");
+            block.append(node("strong", "Nr. " + lieferung.kartonnummer + " \u{b7} " + lieferung.name));
+            block.append(node("p", paketInfo(lieferung), "load-info"));
+            documents(block, lieferung, t, true);
+            panel.append(block);
+          }
           const besuchsLabel = node("label", "Notiz zum heutigen Besuch (optional)");
           const besuchsNotiz = node("textarea");
           besuchsNotiz.rows = 3;
@@ -960,7 +1006,7 @@
               );
             actions.append(
               button(
-                "\u{2713} Erledigt \u{b7} n\u{e4}chster Kunde",
+                "\u{2713} Stopp erledigt \u{b7} weiter",
                 () => completeVisit(t, next, besuchsNotiz.value),
                 "success",
               ),
@@ -1008,12 +1054,13 @@
         c.append(panel);
         renderHotel(t, c);
         c.append(button("Tour zur\u{fc}cksetzen", () => resetTour(t), "danger"));
-        if (open.length > 1) {
+        if (stopps.length > 1) {
           const upcoming = node("details", undefined, "card");
           upcoming.append(
-            node("summary", "Weitere offene Kunden (" + (open.length - 1) + ")"),
+            node("summary", "Weitere Lieferstopps (" + (stopps.length - 1) + ")"),
           );
-          for (const k of open.slice(1)) {
+          for (const weiterer of stopps.slice(1)) {
+            const k = weiterer.host;
             const row = node("div", undefined, "row");
             row.append(node("p", k.name));
             if (address(k))
@@ -1036,11 +1083,19 @@
       // BESUCH ABSCHLIESSEN UND WEITERFAHREN
       // ============================================================
       async function completeVisit(t, k, notiz = "") {
-        if (!confirm('Besuch bei "' + k.name + '" abschlie\u{df}en?')) return;
+        const stopp = lieferStopps(rows).find(s => String(s.host.id) === String(k.id));
+        if (!stopp) throw new Error("Dieser Lieferstopp ist nicht mehr offen.");
+        if (!confirm('Stopp bei "' + k.name + '" abschlie\u{df}en? Alle ' + stopp.lieferungen.length + ' Lieferungen werden erledigt und ihre Lieferscheine archiviert.')) return;
         const s = state(t),
           tab = s.automatisch ? reserveMap() : null;
         try {
-          await updateCustomer(k.id, { erledigt: true, lieferschein_pfad: null, letzter_besuch: new Date().toISOString(), besuchsnotiz: notiz.trim() });
+          const ids = stopp.lieferungen.map(l => l.id);
+          const { data: gespeichert, error: speicherFehler } = await supabaseClient
+            .from("kunden")
+            .update({ erledigt: true, lieferschein_pfad: null, letzter_besuch: new Date().toISOString(), besuchsnotiz: notiz.trim() })
+            .in("id", ids).eq("tour", t).select("id");
+          if (speicherFehler) throw speicherFehler;
+          if (gespeichert?.length !== ids.length) throw new Error("Nicht alle Lieferungen konnten gespeichert werden. Bitte neu laden und kontrollieren.");
           let latest;
           try {
             latest = await loadCustomers(t);
@@ -1054,7 +1109,7 @@
             if (tab) tab.close();
             return;
           }
-          const next = latest.find((x) => x.geplant && !x.erledigt),
+          const next = lieferStopps(latest)[0]?.host,
             a = next ? address(next) : ZUHAUSE;
           if (next && !a)
             throw new Error(
@@ -1130,7 +1185,8 @@
           ["ort", "Ort", "text"],
           ["telefon", "Telefon", "tel"],
           ["tour", "Tour", "select"],
-          ["kartonnummer", "Kartonnummer (selbst vergeben)", "number"],
+          ["kartonnummer", "Kartonnummer (z. B. 4 oder 4.1)", "text"],
+          ["abgeben_bei_id", "Abgeben bei", "select"],
           ["paketanzahl", "Paketanzahl / Kartonanzahl", "number"],
           ["lagerort", "Lagerort im Fahrzeug", "select"],
           ["notiz", "Notiz", "textarea"],
@@ -1144,7 +1200,9 @@
                 : "input",
           );
           if (type === "select") {
-            const optionen = id === "lagerort"
+            const optionen = id === "abgeben_bei_id"
+              ? [["", "Eigene Lieferadresse"], ...rows.filter(x => String(x.id) !== String(k?.id) && !x.abgeben_bei_id && x.tour === (k?.tour || defaultTour)).map(x => [String(x.id), x.name])]
+              : id === "lagerort"
               ? [["", "Noch nicht zugeordnet"], ...Object.entries(lagerorte)]
               : [["", "Tour ausw\u{e4}hlen"], ...Object.entries(names)];
             for (const [value, text] of optionen) {
@@ -1161,7 +1219,8 @@
             input.max = "100000";
             input.step = "1";
             input.inputMode = "numeric";
-            input.placeholder = "Noch nicht eingetragen";
+            input.placeholder = id === "kartonnummer" ? "Zum Beispiel 4.1" : "Noch nicht eingetragen";
+            if (id === "kartonnummer") { input.inputMode = "decimal"; input.pattern = "[1-9][0-9]*(\\.[1-9][0-9]*)?"; }
           }
           fields[id] = input;
           label.append(input);
@@ -1188,16 +1247,25 @@
             );
             if (!values.name || !values.tour)
               throw new Error("Bitte Name und Tour eingeben.");
-            values.kartonnummer = values.kartonnummer === "" ? null : Number(values.kartonnummer);
-            if (values.kartonnummer !== null && (!Number.isInteger(values.kartonnummer) ||
-                values.kartonnummer < 1 || values.kartonnummer > 100000))
-              throw new Error("Bitte eine ganze Kartonnummer zwischen 1 und 100000 eingeben.");
+            values.kartonnummer = values.kartonnummer === "" ? null : values.kartonnummer.replace(",", ".");
+            if (values.kartonnummer !== null && !nummerGueltig(values.kartonnummer))
+              throw new Error("Bitte eine Kartonnummer wie 4 oder 4.1 eingeben.");
+            values.abgeben_bei_id = values.abgeben_bei_id || null;
+            if (values.abgeben_bei_id) {
+              const host = rows.find(x => String(x.id) === values.abgeben_bei_id);
+              if (!host || host.tour !== values.tour || host.abgeben_bei_id || String(host.id) === String(k?.id))
+                throw new Error("Bitte einen Kunden derselben Tour mit eigener Lieferadresse ausw\u{e4}hlen.");
+              if (k && rows.some(x => String(x.abgeben_bei_id) === String(k.id)))
+                throw new Error("Diesem Kunden sind bereits Lieferungen zugeordnet. Er muss eine eigene Abgabeadresse behalten.");
+            }
             values.paketanzahl = values.paketanzahl === "" ? null : Number(values.paketanzahl);
             if (values.paketanzahl !== null && (!Number.isInteger(values.paketanzahl) ||
                 values.paketanzahl < 0 || values.paketanzahl > 100000))
               throw new Error("Bitte eine ganze Paketanzahl zwischen 0 und 100000 eingeben.");
             if (values.lagerort && !Object.hasOwn(lagerorte, values.lagerort))
               throw new Error("Bitte einen Lagerort aus der Liste auswaehlen.");
+            if (k && values.tour !== k.tour && rows.some(x => String(x.abgeben_bei_id) === String(k.id)))
+              throw new Error("Bitte zuerst die zugeordneten Lieferungen entfernen, bevor die Tour dieser Abgabeadresse geaendert wird.");
             if (k?.geplant && !k.erledigt) pruefeBeladung(values);
             if (k) await updateCustomer(k.id, values);
             else {
@@ -1367,7 +1435,7 @@
           return;
         const { data, error } = await supabaseClient
           .from("kunden")
-          .update({ geplant: false, erledigt: false, kartonnummer: null, paketanzahl: null, lagerort: null, lieferschein_pfad: null })
+          .update({ geplant: false, erledigt: false, kartonnummer: null, paketanzahl: null, lagerort: null, abgeben_bei_id: null, lieferschein_pfad: null })
           .eq("tour", t)
           .select("id");
         if (error) throw error;
