@@ -321,6 +321,13 @@
           grid-template-columns: 1fr;
         }
       }
+      .account-actions{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:8px}
+      #passwordDialog{border:0;border-radius:16px;padding:24px;width:min(420px,calc(100vw - 32px));max-height:90vh;overflow:auto;box-sizing:border-box}
+      #passwordDialog::backdrop{background:#0007}
+      #passwordDialog label{display:block;margin:14px 0}
+      #passwordDialog input{width:100%;box-sizing:border-box}
+      #passwordMessage{color:#a12b2b;overflow-wrap:anywhere}
+      @media(max-width:600px){header{flex-wrap:wrap;gap:10px}.account-actions{width:100%}}
     </style>
   </head>
   <body>
@@ -328,7 +335,7 @@
     <main class="wrap">
       <header>
         <h1 style="display:flex;align-items:center;gap:12px;"><img src="weintour-logo.png" alt="" width="48" height="48" style="border-radius:12px;">Weintour</h1>
-        <button id="logout" hidden>Abmelden</button>
+        <div class="account-actions"><button id="changePassword" type="button" hidden>Passwort ändern</button><button id="logout" hidden>Abmelden</button></div>
       </header>
       <section id="login" class="card">
         <h2>Anmelden</h2>
@@ -369,6 +376,17 @@
         </section>
       </div>
     </main>
+    <dialog id="passwordDialog">
+      <form id="passwordForm" class="form">
+        <h2>Passwort ändern</h2>
+        <label>Aktuelles Passwort<input name="current" type="password" autocomplete="current-password" required></label>
+        <label>Neues Passwort<input name="next" type="password" autocomplete="new-password" minlength="6" required></label>
+        <label>Neues Passwort wiederholen<input name="again" type="password" autocomplete="new-password" minlength="6" required></label>
+        <p>Mindestens 6 Zeichen. Das neue Passwort gilt für dein bestehendes Konto.</p>
+        <p id="passwordMessage" role="alert"></p>
+        <div class="actions"><button id="passwordCancel" type="button">Abbrechen</button><button id="passwordSave" type="submit">Speichern</button></div>
+      </form>
+    </dialog>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script>
       const supabaseClient = supabase.createClient(
@@ -502,6 +520,7 @@
         $("login").hidden = !!session;
         $("app").hidden = !session;
         $("logout").hidden = !session;
+        $("changePassword").hidden = !session;
       }
       let appAuthVersion = 0;
       async function setAuth(session) {
@@ -524,7 +543,7 @@
       }
       function loginAdresse(eingabe) {
         const name = eingabe.trim().toLowerCase();
-        if (name.includes("@")) return name;
+        if (name.includes("@")) throw new Error("Bitte mit deinem Benutzernamen anmelden, zum Beispiel Weintour.");
         if (name === "weintour") return "fabian-112@t-online.de";
         if (!/^[a-z0-9][a-z0-9._-]{1,39}$/.test(name)) {
           throw new Error("Bitte einen Benutzernamen mit 2 bis 40 Zeichen eingeben (Buchstaben, Zahlen, Punkt, Unterstrich oder Bindestrich).");
@@ -549,6 +568,51 @@
           $("loginMessage").textContent = "Anmeldung fehlgeschlagen: " + err.message;
         } finally {
           b.disabled = false;
+        }
+      };
+      async function changeAccountPassword(current, next, again) {
+        if (next !== again) throw new Error("Die neuen Passwörter stimmen nicht überein.");
+        if (next.length < 6) throw new Error("Das neue Passwort braucht mindestens 6 Zeichen.");
+        if (current === next) throw new Error("Bitte ein anderes neues Passwort wählen.");
+        const sessionResult = await supabaseClient.auth.getUser();
+        if (sessionResult.error) throw sessionResult.error;
+        const user = sessionResult.data.user;
+        if (!user || user.id !== userId) throw new Error("Bitte zuerst erneut anmelden.");
+        const check = await supabaseClient.auth.signInWithPassword({email:user.email, password:current});
+        if (check.error) throw check.error;
+        if (check.data.user.id !== user.id) throw new Error("Das Konto hat sich geändert. Bitte erneut anmelden.");
+        const result = await supabaseClient.auth.updateUser({password:next});
+        if (result.error) throw result.error;
+      }
+      let passwordBusy = false;
+      $("changePassword").onclick = () => {
+        $("passwordForm").reset();
+        $("passwordMessage").textContent = "";
+        $("passwordDialog").showModal();
+      };
+      $("passwordCancel").onclick = () => { if (!passwordBusy) $("passwordDialog").close(); };
+      $("passwordDialog").addEventListener("cancel", e => { if (passwordBusy) e.preventDefault(); });
+      $("passwordForm").onsubmit = async e => {
+        e.preventDefault();
+        if (passwordBusy) return;
+        const fields = e.target.elements;
+        passwordBusy = true;
+        $("passwordSave").disabled = true;
+        $("passwordCancel").disabled = true;
+        $("logout").disabled = true;
+        $("passwordMessage").textContent = "Passwort wird geändert …";
+        try {
+          await changeAccountPassword(fields.current.value, fields.next.value, fields.again.value);
+          e.target.reset();
+          $("passwordDialog").close();
+          alert("Passwort geändert. Bei der nächsten Anmeldung bitte das neue Passwort verwenden.");
+        } catch (error) {
+          $("passwordMessage").textContent = error.message || "Passwort konnte nicht geändert werden.";
+        } finally {
+          passwordBusy = false;
+          $("passwordSave").disabled = false;
+          $("passwordCancel").disabled = false;
+          $("logout").disabled = false;
         }
       };
       $("logout").onclick = async () => {
