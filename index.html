@@ -490,7 +490,7 @@
         $("page").hidden = true;
         $("content").replaceChildren();
       }
-      function setAuth(session) {
+      function applyCheckedAuth(session) {
         const next = session?.user.id || null;
         if (next !== userId) {
           userId = next;
@@ -502,6 +502,25 @@
         $("login").hidden = !!session;
         $("app").hidden = !session;
         $("logout").hidden = !session;
+      }
+      let appAuthVersion = 0;
+      async function setAuth(session) {
+        const version = ++appAuthVersion;
+        if (!session) { applyCheckedAuth(null); return; }
+        if (userId !== session.user.id) applyCheckedAuth(null);
+        else $("app").hidden = true;
+        try {
+          const result = await supabaseClient.rpc("pau_app_allowed", {p_app:"weintour"});
+          if (version !== appAuthVersion) return;
+          if (result.error) throw result.error;
+          if (!result.data) throw new Error("Dieser Benutzer ist nicht für Weintour freigeschaltet.");
+          applyCheckedAuth(session);
+          $("loginMessage").textContent = "";
+        } catch (error) {
+          if (version !== appAuthVersion) return;
+          applyCheckedAuth(null);
+          $("loginMessage").textContent = error.message;
+        }
       }
       function loginAdresse(eingabe) {
         const name = eingabe.trim().toLowerCase();
@@ -540,7 +559,8 @@
         }
         window.location.reload();
       };
-      supabaseClient.auth.onAuthStateChange((_event, session) => setAuth(session));
+      // Datenbankanfragen erst außerhalb des Auth-Callbacks starten.
+      supabaseClient.auth.onAuthStateChange((_event, session) => { setTimeout(() => setAuth(session), 0); });
       supabaseClient.auth.getSession().then(({ data, error }) => {
         if (error) $("loginMessage").textContent = error.message;
         else setAuth(data.session);
