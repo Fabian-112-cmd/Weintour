@@ -321,13 +321,10 @@
           grid-template-columns: 1fr;
         }
       }
-      .account-actions{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:8px}
-      #passwordDialog{border:0;border-radius:16px;padding:24px;width:min(420px,calc(100vw - 32px));max-height:90vh;overflow:auto;box-sizing:border-box}
-      #passwordDialog::backdrop{background:#0007}
-      #passwordDialog label{display:block;margin:14px 0}
-      #passwordDialog input{width:100%;box-sizing:border-box}
-      #passwordMessage{color:#a12b2b;overflow-wrap:anywhere}
-      @media(max-width:600px){header{flex-wrap:wrap;gap:10px}.account-actions{width:100%}}
+      .account-actions { display:flex; gap:8px; flex-wrap:wrap; }
+      #passwordDialog { border:0; border-radius:16px; padding:24px; width:min(420px,calc(100vw - 32px)); }
+      #passwordDialog::backdrop { background:#0007; }
+      .route-preview { border:2px solid #c6add8; padding:16px; border-radius:12px; margin-top:16px; }
     </style>
   </head>
   <body>
@@ -335,7 +332,7 @@
     <main class="wrap">
       <header>
         <h1 style="display:flex;align-items:center;gap:12px;"><img src="weintour-logo.png" alt="" width="48" height="48" style="border-radius:12px;">Weintour</h1>
-        <div class="account-actions"><button id="changePassword" type="button" hidden>Passwort ändern</button><button id="logout" hidden>Abmelden</button></div>
+        <div class="account-actions"><button id="changePassword" type="button" hidden>Passwort &#228;ndern</button><button id="logout" hidden>Abmelden</button></div>
       </header>
       <section id="login" class="card">
         <h2>Anmelden</h2>
@@ -378,11 +375,11 @@
     </main>
     <dialog id="passwordDialog">
       <form id="passwordForm" class="form">
-        <h2>Passwort ändern</h2>
+        <h2>Passwort &#228;ndern</h2>
         <label>Aktuelles Passwort<input name="current" type="password" autocomplete="current-password" required></label>
         <label>Neues Passwort<input name="next" type="password" autocomplete="new-password" minlength="6" required></label>
         <label>Neues Passwort wiederholen<input name="again" type="password" autocomplete="new-password" minlength="6" required></label>
-        <p>Mindestens 6 Zeichen. Das neue Passwort gilt für dein bestehendes Konto.</p>
+        <p>Mindestens 6 Zeichen. Das neue Passwort gilt f&#252;r dein bestehendes Konto.</p>
         <p id="passwordMessage" role="alert"></p>
         <div class="actions"><button id="passwordCancel" type="button">Abbrechen</button><button id="passwordSave" type="submit">Speichern</button></div>
       </form>
@@ -453,6 +450,9 @@
             automatisch: s.automatisch !== false,
             bestaetigteAuswahl: typeof s.bestaetigteAuswahl === "string" ? s.bestaetigteAuswahl : "",
             uebersicht: s.uebersicht === true,
+            routeStart: typeof s.routeStart === "string" ? s.routeStart : ZUHAUSE,
+            routeEnd: typeof s.routeEnd === "string" ? s.routeEnd : ZUHAUSE,
+            googleRoute: s.googleRoute || null,
           };
         }
         return states[t];
@@ -513,7 +513,7 @@
         if (next !== userId) {
           userId = next;
           rows = [];
-          for (const obj of [states, views, searches, filters])
+          for (const obj of [states, views, searches, filters, routeDrafts])
             for (const k of Object.keys(obj)) delete obj[k];
           showHome();
         }
@@ -529,10 +529,10 @@
         if (userId !== session.user.id) applyCheckedAuth(null);
         else $("app").hidden = true;
         try {
-          const result = await supabaseClient.rpc("pau_app_allowed", {p_app:"weintour"});
+          const result = await supabaseClient.rpc("pau_app_allowed", { p_app:"weintour" });
           if (version !== appAuthVersion) return;
           if (result.error) throw result.error;
-          if (!result.data) throw new Error("Dieser Benutzer ist nicht für Weintour freigeschaltet.");
+          if (!result.data) throw new Error("Dieser Benutzer ist nicht fuer Weintour freigeschaltet.");
           applyCheckedAuth(session);
           $("loginMessage").textContent = "";
         } catch (error) {
@@ -571,17 +571,17 @@
         }
       };
       async function changeAccountPassword(current, next, again) {
-        if (next !== again) throw new Error("Die neuen Passwörter stimmen nicht überein.");
-        if (next.length < 6) throw new Error("Das neue Passwort braucht mindestens 6 Zeichen.");
-        if (current === next) throw new Error("Bitte ein anderes neues Passwort wählen.");
+        if (next !== again) throw new Error("Die neuen Passwoerter stimmen nicht ueberein.");
+        if (next.length < 6) throw new Error("Mindestens 6 Zeichen eingeben.");
+        if (current === next) throw new Error("Bitte ein anderes neues Passwort waehlen.");
         const sessionResult = await supabaseClient.auth.getUser();
         if (sessionResult.error) throw sessionResult.error;
         const user = sessionResult.data.user;
-        if (!user || user.id !== userId) throw new Error("Bitte zuerst erneut anmelden.");
-        const check = await supabaseClient.auth.signInWithPassword({email:user.email, password:current});
+        if (!user || user.id !== userId) throw new Error("Bitte erneut anmelden.");
+        const check = await supabaseClient.auth.signInWithPassword({ email:user.email, password:current });
         if (check.error) throw check.error;
-        if (check.data.user.id !== user.id) throw new Error("Das Konto hat sich geändert. Bitte erneut anmelden.");
-        const result = await supabaseClient.auth.updateUser({password:next});
+        if (check.data.user.id !== user.id) throw new Error("Das Konto hat sich geaendert.");
+        const result = await supabaseClient.auth.updateUser({ password:next });
         if (result.error) throw result.error;
       }
       let passwordBusy = false;
@@ -595,24 +595,19 @@
       $("passwordForm").onsubmit = async e => {
         e.preventDefault();
         if (passwordBusy) return;
-        const fields = e.target.elements;
         passwordBusy = true;
-        $("passwordSave").disabled = true;
-        $("passwordCancel").disabled = true;
-        $("logout").disabled = true;
-        $("passwordMessage").textContent = "Passwort wird geändert …";
+        const fields = e.target.elements;
+        $("passwordSave").disabled = $("passwordCancel").disabled = $("logout").disabled = true;
+        $("passwordMessage").textContent = "Passwort wird geaendert ...";
         try {
           await changeAccountPassword(fields.current.value, fields.next.value, fields.again.value);
           e.target.reset();
           $("passwordDialog").close();
-          alert("Passwort geändert. Bei der nächsten Anmeldung bitte das neue Passwort verwenden.");
-        } catch (error) {
-          $("passwordMessage").textContent = error.message || "Passwort konnte nicht geändert werden.";
-        } finally {
+          alert("Passwort geaendert. Bei der naechsten Anmeldung bitte das neue Passwort verwenden.");
+        } catch (error) { $("passwordMessage").textContent = error.message; }
+        finally {
           passwordBusy = false;
-          $("passwordSave").disabled = false;
-          $("passwordCancel").disabled = false;
-          $("logout").disabled = false;
+          $("passwordSave").disabled = $("passwordCancel").disabled = $("logout").disabled = false;
         }
       };
       $("logout").onclick = async () => {
@@ -623,7 +618,6 @@
         }
         window.location.reload();
       };
-      // Datenbankanfragen erst außerhalb des Auth-Callbacks starten.
       supabaseClient.auth.onAuthStateChange((_event, session) => { setTimeout(() => setAuth(session), 0); });
       supabaseClient.auth.getSession().then(({ data, error }) => {
         if (error) $("loginMessage").textContent = error.message;
@@ -750,6 +744,141 @@
       function auswahlBestaetigt(t) {
         return !!auswahlSignatur(t) && state(t).bestaetigteAuswahl === auswahlSignatur(t);
       }
+      const routeDrafts = {};
+      let routeBusy = false;
+      function routeSnapshot(data) {
+        return data.map(k => Object.fromEntries([
+          "id", "name", "tour", "strasse", "plz", "ort", "geplant", "erledigt", "abgeben_bei_id", "kartonnummer"
+        ].map(key => [key, k[key] ?? null]))).sort((a,b) => String(a.id).localeCompare(String(b.id), "en", { numeric:true }));
+      }
+      function routeStamp(data) {
+        return JSON.stringify(routeSnapshot(data));
+      }
+      function googleRouteCurrent(t) {
+        const info = state(t).googleRoute;
+        if (!info) return false;
+        // Completed visits do not invalidate a route; address, grouping and number edits do.
+        const signature = data => JSON.stringify(routeSnapshot(data).map(k => {
+          const { erledigt, ...other } = k;
+          return other;
+        }));
+        return info.signature === signature(rows) && info.start === state(t).routeStart && info.end === state(t).routeEnd;
+      }
+      function googleRouteSignature(data) {
+        return JSON.stringify(routeSnapshot(data).map(k => { const { erledigt, ...other } = k; return other; }));
+      }
+      async function calculateGoogleRoute(t) {
+        if (routeBusy) throw new Error("Eine Berechnung laeuft bereits.");
+        if (!auswahlBestaetigt(t)) throw new Error("Bitte zuerst die Kundenauswahl bestaetigen.");
+        if (state(t).gestartet) throw new Error("Eine gestartete Tour bitte nicht neu nummerieren. Erst die Fahrt abschliessen oder zuruecksetzen.");
+        routeBusy = true;
+        const uid = userId;
+        try {
+          const fresh = await loadCustomers(t);
+          if (!fresh || userId !== uid) return;
+          if (!auswahlBestaetigt(t)) throw new Error("Die Auswahl wurde geaendert. Bitte erneut bestaetigen.");
+          if (fresh.some(k => k.geplant && k.erledigt)) throw new Error("Vor der Neuberechnung bitte erledigte Lieferungen abwaehlen oder die Tour zuruecksetzen.");
+          const stops = lieferStopps(fresh);
+          if (!stops.length) throw new Error("Keine offenen Lieferstopps ausgewaehlt.");
+          if (stops.length > 25) throw new Error("Maximal 25 Lieferstopps pro Berechnung.");
+          for (const stop of stops) if (!address(stop.host)) throw new Error("Strasse oder Ort fehlt bei " + stop.host.name);
+          const start = state(t).routeStart.trim(), end = state(t).routeEnd.trim();
+          if (!start || !end) throw new Error("Bitte Start- und Zieladresse eingeben.");
+          const expected = routeSnapshot(fresh);
+          const sessionResult = await supabaseClient.auth.getSession();
+          if (sessionResult.error) throw sessionResult.error;
+          if (!sessionResult.data.session) throw new Error("Bitte erneut anmelden.");
+          const { data, error } = await supabaseClient.functions.invoke("weintour-route", {
+            body: { tour:t, startAddress:start, endAddress:end },
+            headers: { Authorization:"Bearer " + sessionResult.data.session.access_token }
+          });
+          if (error) {
+            let message = error.message;
+            try { const detail = await error.context.json(); message = detail.error || message; } catch {}
+            throw new Error(message);
+          }
+          if (data?.error) throw new Error(data.error);
+          if (!data || data.tour !== t || !Array.isArray(data.stops)) throw new Error("Ungueltige Routenantwort.");
+          const numbers = data.stops.flatMap(stop => stop.deliveries || []).map(k => ({ id:k.id, kartonnummer:k.kartonnummer }));
+          const selectedIds = fresh.filter(k => k.geplant && !k.erledigt).map(k => String(k.id)).sort();
+          if (JSON.stringify(numbers.map(k => String(k.id)).sort()) !== JSON.stringify(selectedIds) ||
+              new Set(numbers.map(k => k.kartonnummer)).size !== numbers.length || numbers.some(k => !nummerGueltig(k.kartonnummer))) {
+            throw new Error("Die berechneten Lieferungen stimmen nicht mit der Auswahl ueberein.");
+          }
+          if (userId !== uid || page !== t) return;
+          if (routeStamp(rows) !== JSON.stringify(expected) || state(t).routeStart.trim() !== start || state(t).routeEnd.trim() !== end) {
+            throw new Error("Planung wurde geaendert. Bitte neu berechnen.");
+          }
+          routeDrafts[t] = { data, expected, numbers, uid, start, end };
+        } finally {
+          routeBusy = false;
+          if (page === t && userId === uid) renderTour(t);
+        }
+      }
+      async function acceptGoogleRoute(t) {
+        if (routeBusy) throw new Error("Bitte warten, bis die Routenplanung abgeschlossen ist.");
+        const draft = routeDrafts[t];
+        if (!draft || draft.uid !== userId || routeStamp(rows) !== JSON.stringify(draft.expected) ||
+            state(t).routeStart.trim() !== draft.start || state(t).routeEnd.trim() !== draft.end) {
+          throw new Error("Planung wurde geaendert. Bitte Route neu berechnen.");
+        }
+        if (!confirm("Diese Google-Reihenfolge uebernehmen und die Kartonnummern aller ausgewaehlten Lieferungen neu vergeben?")) return;
+        routeBusy = true;
+        try {
+        const { data, error } = await supabaseClient.rpc("weintour_route_uebernehmen", {
+          p_tour:t, p_expected:draft.expected, p_numbers:draft.numbers
+        });
+        if (error) throw error;
+        if (data !== draft.numbers.length) throw new Error("Speicherung konnte nicht bestaetigt werden. Bitte neu laden.");
+        const latest = await loadCustomers(t);
+        delete routeDrafts[t];
+        if (!latest || draft.uid !== userId) return;
+        state(t).googleRoute = { start:draft.start, end:draft.end, signature:googleRouteSignature(latest), distanceMeters:draft.data.distanceMeters, duration:draft.data.duration };
+        state(t).routeStart = draft.start;
+        state(t).routeEnd = draft.end;
+        state(t).uebersicht = true;
+        saveState(t);
+        renderTour(t);
+        } finally {
+          routeBusy = false;
+          if (page === t && draft.uid === userId) renderTour(t);
+        }
+      }
+      function renderGooglePlanning(t, box) {
+        const area = node("div", undefined, "form");
+        area.append(node("h3", "Route mit Google berechnen"));
+        area.append(node("p", "Nur ausgewaehlte Lieferungen. Gemeinsame Abgabestellen bleiben zusammen. Kartonnummern werden nach der Berechnung vergeben; Paketanzahl und Lagerort muessen erst vor dem Tourstart vollstaendig sein.", "muted"));
+        for (const [key, label] of [["routeStart","Startadresse"],["routeEnd","Zieladresse"]]) {
+          const field = node("label", label), input = node("input");
+          input.type = "text";
+          input.value = state(t)[key];
+          input.maxLength = 500;
+          input.oninput = () => { state(t)[key] = input.value; delete routeDrafts[t]; area.querySelector(".route-preview")?.remove(); saveState(t); };
+          field.append(input);
+          area.append(field);
+        }
+        const run = button(routeBusy ? "Google berechnet ..." : "Google-Reihenfolge berechnen", () => calculateGoogleRoute(t), "primary");
+        run.disabled = routeBusy;
+        area.append(run);
+        if (googleRouteCurrent(t)) area.append(node("p", "Google-Reihenfolge uebernommen. Die Kartonnummern sind gespeichert.", "muted"));
+        const draft = routeDrafts[t];
+        if (draft && draft.uid === userId && routeStamp(rows) === JSON.stringify(draft.expected)) {
+          const preview = node("section", undefined, "route-preview");
+          preview.append(node("h3", "Routenvorschlag - Google Maps"));
+          if (Number.isFinite(draft.data.distanceMeters)) preview.append(node("p", (draft.data.distanceMeters / 1000).toLocaleString("de-DE", { maximumFractionDigits:1 }) + " km insgesamt", "muted"));
+          for (const stop of draft.data.stops) {
+            const row = node("div", undefined, "delivery-item");
+            row.append(node("strong", "Stopp " + stop.stopNumber + ": " + stop.name));
+            row.append(node("p", stop.address, "muted"));
+            for (const delivery of stop.deliveries) row.append(node("p", "Nr. " + delivery.kartonnummer + " - " + delivery.name, "muted"));
+            preview.append(row);
+          }
+          preview.append(button("Reihenfolge uebernehmen", () => acceptGoogleRoute(t), "primary"));
+          preview.append(button("Vorschlag verwerfen", () => { delete routeDrafts[t]; renderTour(t); }));
+          area.append(preview);
+        }
+        box.append(area);
+      }
       function renderPlanSteps(t, c) {
         const box = node("section", undefined, "card");
         box.append(node("h3", "N\u{e4}chste Tour vorbereiten"));
@@ -766,7 +895,8 @@
           renderTour(t);
         }));
         if (auswahlBestaetigt(t)) box.append(node("p", "Auswahl best\u{e4}tigt. Jetzt unter Bearbeiten die fehlenden Angaben erg\u{e4}nzen.", "muted"));
-        box.append(button("Sortieren & \u{dc}bersicht", () => {
+        renderGooglePlanning(t, box);
+        box.append(button("Manuell sortieren & \u{dc}bersicht", () => {
           if (!auswahlBestaetigt(t)) throw new Error("Bitte zuerst die aktuelle Kundenauswahl best\u{e4}tigen.");
           const offen = rows.filter(k => k.geplant && !k.erledigt);
           const fehlen = offen.filter(k => fehlendeBeladung(k).length);
@@ -1055,7 +1185,7 @@
           next = stopp?.host;
         const panel = node("section", undefined, "card current");
         panel.append(
-          node("p", "Reihenfolge: nach Kartonnummer. Google-Optimierung folgt.", "muted"),
+          node("p", "Reihenfolge nach gespeicherter Kartonnummer.", "muted"),
         );
         if (selected.length) {
           const progress = node("progress", undefined, "progress");
@@ -1177,8 +1307,8 @@
           panel.append(
             node("h3", "\u{2713} Alle ausgew\u{e4}hlten Kunden erledigt"),
             button(
-              "\u{1f3e0} Nach Hause navigieren",
-              () => navigate(ZUHAUSE),
+              "Zum Tourziel navigieren",
+              () => navigate(googleRouteCurrent(t) ? state(t).routeEnd : ZUHAUSE),
               "primary",
             ),
           );
@@ -1258,7 +1388,7 @@
             return;
           }
           const next = lieferStopps(latest)[0]?.host,
-            a = next ? address(next) : ZUHAUSE;
+            a = next ? address(next) : (googleRouteCurrent(t) ? state(t).routeEnd : ZUHAUSE);
           if (next && !a)
             throw new Error(
               "Besuch gespeichert. Beim n\u{e4}chsten Kunden fehlen Stra\u{df}e oder Ort.",
@@ -1595,6 +1725,8 @@
         s.hotel = "";
         s.bestaetigteAuswahl = "";
         s.uebersicht = false;
+        s.googleRoute = null;
+        delete routeDrafts[t];
         saveState(t);
         views[t] = "planung";
         await loadCustomers(t);
