@@ -963,6 +963,7 @@
           }
           preview.append(node("p","Zum Ziel: " + routeMetric(draft.data.legs?.[draft.data.stops.length]),"muted"));
           preview.append(node("p","Fahrzeiten ohne Besuche und Pausen. Powered by Google, ©" + new Date().getFullYear() + " Google","muted"));
+          routeMapOverview(preview,t,draft.data);
           preview.append(button("Reihenfolge uebernehmen", () => acceptGoogleRoute(t), "primary"));
           preview.append(button("Vorschlag verwerfen", () => { delete routeDrafts[t]; renderTour(t); }));
           area.append(preview);
@@ -992,6 +993,44 @@
         const latest=await loadCustomers(t);
         if(!latest) return;
         if(action==="laden") {st.bestaetigteAuswahl=auswahlSignatur(t);st.uebersicht=true;saveState(t);renderTour(t);}
+      }
+      function mapRouteUrl(points) {
+        const url=new URL("https://www.google.com/maps/dir/");
+        url.searchParams.set("api","1");
+        url.searchParams.set("travelmode","driving");
+        url.searchParams.set("origin",points[0].address);
+        url.searchParams.set("destination",points[points.length-1].address);
+        if(points.length>2) url.searchParams.set("waypoints",points.slice(1,-1).map(p=>p.address).join("|"));
+        return url.href;
+      }
+      function mapRouteParts(points,maxWaypoints) {
+        const parts=[];
+        for(let start=0;start<points.length-1;) {
+          let end=Math.min(points.length-1,start+maxWaypoints+1);
+          while(end>start+1 && mapRouteUrl(points.slice(start,end+1)).length>2048) end--;
+          const route=points.slice(start,end+1);
+          if(mapRouteUrl(route).length>2048) throw new Error("Adresse ist fuer einen Google-Maps-Link zu lang.");
+          parts.push(route);start=end;
+        }
+        return parts;
+      }
+      function routeMapOverview(container,t,draftData=null) {
+        let stops;
+        try {stops=draftData ? draftData.stops.map(stop=>({name:stop.name,address:stop.address})) : lieferStopps(rows.map(k=>({...k,erledigt:false}))).map(stop=>({name:stop.host.name,address:address(stop.host)}));}
+        catch {return;}
+        if(!stops.length || stops.some(stop=>!stop.address)) return;
+        const points=[{name:"Start",address:draftData?.startAddress || state(t).routeStart},...stops,{name:"Ziel",address:draftData?.endAddress || state(t).routeEnd}];
+        const section=node("details",undefined,"route-options");
+        section.append(node("summary","Route in Google Maps ansehen"));
+        const parts=mapRouteParts(points,mobile()?3:9);
+        section.append(node("p",parts.length===1 ? "Geplante Stopps als Kartenuebersicht. Die Navigation startet nicht automatisch." : "Google Maps begrenzt die Zwischenstopps pro Link. Deshalb ist die gesamte Tour hier in " + parts.length + " anschliessende Abschnitte aufgeteilt; alle Stopps sind enthalten.","muted"));
+        for(const [index,part] of parts.entries()) {
+          const link=node("a",parts.length===1 ? "Route oeffnen" : "Abschnitt " + (index+1) + ": " + part[0].name + " - " + part[part.length-1].name,"btn");
+          link.href=mapRouteUrl(part);link.target="_blank";link.rel="noopener noreferrer";
+          section.append(link);
+        }
+        section.append(node("p","Die Stoppreihenfolge wird uebergeben. Google Maps berechnet den Strassenverlauf und aktuelle Fahrzeiten beim Oeffnen neu.","muted"));
+        container.append(section);
       }
       function renderPlanSteps(t, c) {
         const box = node("section", undefined, "card tour-preparation");
@@ -1024,6 +1063,7 @@
         }, "secondary"));
         if (auswahlBestaetigt(t) && state(t).uebersicht) {
           box.append(node("h3", "Reihenfolge nach Kartonnummer"));
+          routeMapOverview(box,t);
           const stops = lieferStopps(rows);
           if (!stops.length) box.append(node("p", "Keine offenen Lieferungen."));
           for (const [index, stop] of stops.entries()) {
@@ -1456,6 +1496,7 @@
         );
         panel.append(label);
         c.append(panel);
+        routeMapOverview(c,t);
         renderHotel(t, c);
         c.append(button("Tour zur\u{fc}cksetzen", () => resetTour(t), "danger"));
         if (stopps.length > 1) {
