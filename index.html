@@ -341,6 +341,20 @@
   padding: 10px;
 }
 .loading-fields input { text-align: center; }
+.tour-preparation > h3 { margin-bottom: 8px; }
+.tour-preparation > .muted { margin: 8px 0 12px; }
+.selection-confirm { padding: 10px 15px; margin-bottom: 10px; }
+.route-planning { gap: 12px; margin: 2px 0 16px; }
+.route-options { border: 1px solid var(--line); border-radius: 10px; padding: 0 12px; }
+.route-options summary { font-size: 14px; font-weight: 500; overflow-wrap: anywhere; }
+.route-options summary::before { content: "+"; margin-right: 9px; font-weight: 700; }
+.route-options[open] summary::before { content: "−"; }
+.route-option-fields { padding: 4px 0 12px; gap: 10px; }
+.route-option-fields label { min-width: 0; font-size: 14px; }
+.route-option-fields input, .route-option-fields select { box-sizing: border-box; min-width: 0; padding: 10px; }
+.route-actions { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 8px; max-width: 460px; }
+.route-actions button { min-width: 0; padding: 10px 8px; font-size: 14px; line-height: 1.3; }
+@media(min-width:600px) { .route-option-fields { grid-template-columns: repeat(2,minmax(0,1fr)); } .route-option-fields label:last-child { grid-column: 1 / -1; } }
 </style>
   </head>
   <body>
@@ -902,8 +916,14 @@
       }
       function renderGooglePlanning(t, box) {
         const area = node("div", undefined, "form");
-        area.append(node("h3", "Route mit Google berechnen"));
-        area.append(node("p", "Nur ausgewaehlte Lieferungen. Gemeinsame Abgabestellen bleiben zusammen. Kartonnummern werden nach der Berechnung vergeben; Paketanzahl und Lagerort muessen erst vor dem Tourstart vollstaendig sein.", "muted"));
+        area.classList.add("route-planning");
+        const options=node("details",undefined,"route-options");
+        const firstStop=lieferStopps(rows).find(stop=>String(stop.host.id)===state(t).firstStopId);
+        const summary=node("summary","Routenoptionen - " + (firstStop ? "zuerst " + firstStop.host.name : "Google entscheidet"));
+        options.append(summary);
+        const optionFields=node("div",undefined,"form route-option-fields");
+        options.append(optionFields);
+        area.append(options);
         for (const [key, label] of [["routeStart","Startadresse"],["routeEnd","Zieladresse"]]) {
           const field = node("label", label), input = node("input");
           input.type = "text";
@@ -911,17 +931,17 @@
           input.maxLength = 500;
           input.oninput = () => { state(t)[key] = input.value; delete routeDrafts[t]; area.querySelector(".route-preview")?.remove(); saveState(t); };
           field.append(input);
-          area.append(field);
+          optionFields.append(field);
         }
         const firstLabel=node("label","Erster Kunde (optional)"), first=node("select");
         for(const [value,text] of [["","Google entscheidet"],...lieferStopps(rows).map(stop=>[String(stop.host.id),stop.host.name])]) {const option=node("option",text);option.value=value;first.append(option);}
         first.value=state(t).firstStopId || "";
         first.onchange=()=>{state(t).firstStopId=first.value;delete routeDrafts[t];saveState(t);renderTour(t);};
-        firstLabel.append(first);area.append(firstLabel);
-        area.append(node("p","Ein festgelegter erster Kunde kann zwei Google-Anfragen ausloesen. Nach Aenderungen der Reihenfolge bitte 15 Sekunden bis zur naechsten Berechnung warten.","muted"));
-        const run = button(routeBusy ? "Google berechnet ..." : "Google-Reihenfolge berechnen", () => calculateGoogleRoute(t), "primary");
+        firstLabel.append(first);optionFields.append(firstLabel);
+        const run = button(routeBusy ? "Google berechnet ..." : "Google berechnen", () => calculateGoogleRoute(t), "primary");
         run.disabled = routeBusy;
-        area.append(run);
+        const routeActions=node("div",undefined,"route-actions");
+        routeActions.append(run);area.append(routeActions);
         if (googleRouteCurrent(t)) area.append(node("p", "Google-Reihenfolge uebernommen. Die Kartonnummern sind gespeichert.", "muted"));
         const draft = routeDrafts[t];
         if (draft && draft.uid === userId && routeStamp(rows) === JSON.stringify(draft.expected)) {
@@ -949,8 +969,32 @@
         }
         box.append(area);
       }
+      async function savedTourAction(t,action) {
+        if(routeBusy) throw new Error("Bitte die Routenberechnung zuerst abschliessen.");
+        if(state(t).gestartet) throw new Error("Bitte zuerst die aktive Tour abschliessen oder zuruecksetzen.");
+        if(action==="speichern" && routeDrafts[t]) throw new Error("Bitte den Routenvorschlag zuerst mit Reihenfolge uebernehmen speichern.");
+        const text=action==="speichern"
+          ? "Die aktuelle Kundenauswahl, Abgabestellen und Kartonnummern als letzte Tour speichern? Eine bisherige Vorlage dieser Tour wird ersetzt."
+          : action==="laden"
+          ? "Letzte Tour laden? Die aktuelle Auswahl wird ersetzt. Paketanzahlen und Lagerorte der geladenen Kunden werden geleert und fuer die neue Fahrt eingetragen. Lieferscheine bleiben erhalten - bitte fuer die neue Fahrt pruefen."
+          : "Alle Kunden dieser Tour abwaehlen? Auch Kunden ausserhalb des aktuellen Suchfilters werden abgewaehlt. Kundendaten, Beladeangaben und Lieferscheine bleiben erhalten.";
+        if(!confirm(text)) return;
+        const uid=userId;
+        const {data,error}=await supabaseClient.rpc("weintour_vorlage",{p_tour:t,p_aktion:action,p_start:state(t).routeStart,p_ziel:state(t).routeEnd});
+        if(error) throw error;
+        if(uid!==userId || page!==t) return;
+        if(action==="speichern") {alert("Letzte Tour gespeichert. Du kannst sie spaeter fuer dieses Konto wieder laden.");return;}
+        delete routeDrafts[t];
+        for(const key of Object.keys(loadingDrafts)) if(key.startsWith(t+":")) delete loadingDrafts[key];
+        const st=state(t);st.googleRoute=null;st.bestaetigteAuswahl="";st.uebersicht=false;st.firstStopId="";
+        if(action==="laden") {st.routeStart=data.start;st.routeEnd=data.ziel;filters[t]="auswahl";searches[t]="";}
+        saveState(t);
+        const latest=await loadCustomers(t);
+        if(!latest) return;
+        if(action==="laden") {st.bestaetigteAuswahl=auswahlSignatur(t);st.uebersicht=true;saveState(t);renderTour(t);}
+      }
       function renderPlanSteps(t, c) {
-        const box = node("section", undefined, "card");
+        const box = node("section", undefined, "card tour-preparation");
         box.append(node("h3", "N\u{e4}chste Tour vorbereiten"));
         box.append(node("p", "1. Kunden ausw\u{e4}hlen und best\u{e4}tigen. 2. Beladeangaben erg\u{e4}nzen. 3. Sortieren und Reihenfolge pr\u{fc}fen.", "muted"));
         box.append(button(auswahlBestaetigt(t) ? "Auswahl erneut best\u{e4}tigen" : "Auswahl best\u{e4}tigen", () => {
@@ -963,15 +1007,21 @@
           filters[t] = "auswahl";
           searches[t] = "";
           renderTour(t);
-        }));
-        if (auswahlBestaetigt(t)) box.append(node("p", "Auswahl best\u{e4}tigt. Die fehlenden Beladeangaben direkt in der Uebersicht ergaenzen.", "muted"));
+        }, "primary selection-confirm"));
+        if (auswahlBestaetigt(t)) box.append(node("p", "Auswahl bestaetigt.", "muted"));
+        const templates=node("details",undefined,"route-options");
+        templates.append(node("summary","Letzte Tour wiederverwenden"));
+        const templateActions=node("div",undefined,"actions");
+        templateActions.append(button("Letzte Tour speichern",()=>savedTourAction(t,"speichern")),button("Letzte Tour laden",()=>savedTourAction(t,"laden")));
+        templates.append(node("p","Speichert die Auswahl, Reihenfolge und Abgabestellen je Tour fuer dein Konto. Paketanzahl, Lagerort und Lieferscheine bitte fuer die neue Fahrt pruefen.","muted"),templateActions);
+        box.append(templates);
         renderGooglePlanning(t, box);
-        box.append(button("Manuell sortieren & \u{dc}bersicht", () => {
+        box.querySelector(".route-actions").append(button("Manuell / Uebersicht", () => {
           if (!auswahlBestaetigt(t)) throw new Error("Bitte zuerst die aktuelle Kundenauswahl best\u{e4}tigen.");
           state(t).uebersicht = true;
           saveState(t);
           renderTour(t);
-        }, "primary"));
+        }, "secondary"));
         if (auswahlBestaetigt(t) && state(t).uebersicht) {
           box.append(node("h3", "Reihenfolge nach Kartonnummer"));
           const stops = lieferStopps(rows);
@@ -1057,6 +1107,11 @@
               ),
             );
           for (const k of found) list.append(customerCard(k, t));
+          if(rows.some(k=>k.geplant)) {
+            const bottom=node("div",undefined,"card");
+            bottom.append(button("Alle Kunden abwaehlen",()=>savedTourAction(t,"abwaehlen"),"danger"));
+            list.append(bottom);
+          }
         }
         search.oninput = () => {
           searches[t] = search.value;
