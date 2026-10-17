@@ -325,7 +325,23 @@
       #passwordDialog { border:0; border-radius:16px; padding:24px; width:min(420px,calc(100vw - 32px)); }
       #passwordDialog::backdrop { background:#0007; }
       .route-preview { border:2px solid #c6add8; padding:16px; border-radius:12px; margin-top:16px; }
-    </style>
+    .loading-fields {
+  display: grid;
+  grid-template-columns: minmax(0, 110px) minmax(0, 180px);
+  gap: 10px;
+  width: 100%;
+}
+.loading-fields label { min-width: 0; }
+.loading-fields input,
+.loading-fields select {
+  box-sizing: border-box;
+  min-width: 0;
+  min-height: 44px;
+  font-size: 16px;
+  padding: 10px;
+}
+.loading-fields input { text-align: center; }
+</style>
   </head>
   <body>
     <!-- OBERFLAECHE: Anmeldung, Startseite und Touransicht -->
@@ -869,7 +885,10 @@
         const location = node("select");
         for (const [value,text] of [["","Bitte waehlen"],...Object.entries(lagerorte)]) {const option=node("option",text);option.value=value;location.append(option);}
         location.value=draft.lagerort;
-        for (const [title,input] of [["Pakete",packages],["Lagerort",location]]) {const label=node("label",title);label.append(input);area.append(label);}
+        const fields=node("div",undefined,"loading-fields");
+        packages.inputMode="numeric";
+        for (const [title,input] of [["Pakete",packages],["Lagerort",location]]) {const label=node("label",title);label.append(input);fields.append(label);}
+        area.append(fields);
         const changed=()=>{draft.paketanzahl=packages.value;draft.lagerort=location.value;loadingDrafts[key]=draft;document.querySelectorAll("[data-tour-ready]").forEach(b=>b.disabled=true);};
         packages.oninput=changed; location.onchange=changed;
         return area;
