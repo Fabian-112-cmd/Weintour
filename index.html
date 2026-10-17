@@ -450,6 +450,7 @@
             automatisch: s.automatisch !== false,
             bestaetigteAuswahl: typeof s.bestaetigteAuswahl === "string" ? s.bestaetigteAuswahl : "",
             uebersicht: s.uebersicht === true,
+            firstStopId: typeof s.firstStopId === "string" ? s.firstStopId : "",
             routeStart: typeof s.routeStart === "string" ? s.routeStart : ZUHAUSE,
             routeEnd: typeof s.routeEnd === "string" ? s.routeEnd : ZUHAUSE,
             googleRoute: s.googleRoute || null,
@@ -513,7 +514,7 @@
         if (next !== userId) {
           userId = next;
           rows = [];
-          for (const obj of [states, views, searches, filters, routeDrafts])
+          for (const obj of [states, views, searches, filters, routeDrafts, loadingDrafts])
             for (const k of Object.keys(obj)) delete obj[k];
           showHome();
         }
@@ -698,6 +699,7 @@
         return rows;
       }
       function renderTour(t) {
+        for(const key of Object.keys(loadingDrafts)) if(key.startsWith(t+":") && !rows.some(k=>k.geplant && !k.erledigt && key===t+":"+k.id)) delete loadingDrafts[key];
         if (page !== t || !userId) return;
         const c = $("content");
         c.replaceChildren();
@@ -708,6 +710,7 @@
           ["fahrt", "\u{1f69a} Aktive Tour"],
         ]) {
           const b = button(label, () => {
+            if (v === "fahrt" && !state(t).gestartet) { requireReady(t); if(Object.keys(loadingDrafts).some(key=>key.startsWith(t+":"))) throw new Error("Bitte Beladeangaben zuerst speichern."); }
             views[t] = v;
             renderTour(t);
           });
@@ -767,7 +770,7 @@
       function googleRouteSignature(data) {
         return JSON.stringify(routeSnapshot(data).map(k => { const { erledigt, ...other } = k; return other; }));
       }
-      async function calculateGoogleRoute(t) {
+      async function calculateGoogleRoute(t, stopOrder = null) {
         if (routeBusy) throw new Error("Eine Berechnung laeuft bereits.");
         if (!auswahlBestaetigt(t)) throw new Error("Bitte zuerst die Kundenauswahl bestaetigen.");
         if (state(t).gestartet) throw new Error("Eine gestartete Tour bitte nicht neu nummerieren. Erst die Fahrt abschliessen oder zuruecksetzen.");
@@ -789,7 +792,7 @@
           if (sessionResult.error) throw sessionResult.error;
           if (!sessionResult.data.session) throw new Error("Bitte erneut anmelden.");
           const { data, error } = await supabaseClient.functions.invoke("weintour-route", {
-            body: { tour:t, startAddress:start, endAddress:end },
+            body: { tour:t, startAddress:start, endAddress:end, ...(stopOrder ? {stopOrder} : {firstStopId:state(t).firstStopId || null}) },
             headers: { Authorization:"Bearer " + sessionResult.data.session.access_token }
           });
           if (error) {
@@ -833,7 +836,7 @@
         const latest = await loadCustomers(t);
         delete routeDrafts[t];
         if (!latest || draft.uid !== userId) return;
-        state(t).googleRoute = { start:draft.start, end:draft.end, signature:googleRouteSignature(latest), distanceMeters:draft.data.distanceMeters, duration:draft.data.duration };
+        state(t).googleRoute = { start:draft.start, end:draft.end, signature:googleRouteSignature(latest), distanceMeters:draft.data.distanceMeters, duration:draft.data.duration, legs:draft.data.legs, hostIds:draft.data.stops.map(stop=>String(stop.hostId)) };
         state(t).routeStart = draft.start;
         state(t).routeEnd = draft.end;
         state(t).uebersicht = true;
@@ -843,6 +846,40 @@
           routeBusy = false;
           if (page === t && draft.uid === userId) renderTour(t);
         }
+      }
+      function routeMetric(leg) {
+        if (!leg) return "Streckendaten fehlen - bitte neu berechnen.";
+        const seconds = Number(String(leg.duration || "").replace(/s$/, ""));
+        const minutes = Math.ceil(seconds / 60);
+        const time = Number.isFinite(minutes) ? (minutes >= 60 ? Math.floor(minutes/60) + " Std. " + minutes%60 + " Min." : minutes + " Min.") : "Zeit unbekannt";
+        return (Number(leg.distanceMeters || 0)/1000).toLocaleString("de-DE",{maximumFractionDigits:1}) + " km - ca. " + time;
+      }
+      function requireReady(t) {
+        if (!auswahlBestaetigt(t)) throw new Error("Bitte zuerst die Kundenauswahl bestaetigen.");
+        const missing = rows.filter(k=>k.geplant && !k.erledigt && fehlendeBeladung(k).length);
+        if (missing.length) throw new Error("Bitte Beladeangaben ergaenzen und speichern: " + missing.map(k=>k.name + ": " + fehlendeBeladung(k).join(", ")).join("; "));
+      }
+      const loadingDrafts = {};
+      function loadingEditor(k,t) {
+        const area = node("div",undefined,"form");
+        area.append(node("strong", "Nr. " + (k.kartonnummer || "?") + " - " + k.name));
+        const key = t + ":" + k.id;
+        const draft = loadingDrafts[key] || {paketanzahl:k.paketanzahl ?? "",lagerort:k.lagerort || ""};
+        const packages = node("input"); packages.type="number"; packages.min="0"; packages.max="100000"; packages.step="1"; packages.value=draft.paketanzahl;
+        const location = node("select");
+        for (const [value,text] of [["","Bitte waehlen"],...Object.entries(lagerorte)]) {const option=node("option",text);option.value=value;location.append(option);}
+        location.value=draft.lagerort;
+        for (const [title,input] of [["Pakete",packages],["Lagerort",location]]) {const label=node("label",title);label.append(input);area.append(label);}
+        const changed=()=>{draft.paketanzahl=packages.value;draft.lagerort=location.value;loadingDrafts[key]=draft;document.querySelectorAll("[data-tour-ready]").forEach(b=>b.disabled=true);};
+        packages.oninput=changed; location.onchange=changed;
+        return area;
+      }
+      async function saveLoading(t) {
+        const selected=rows.filter(k=>k.geplant && !k.erledigt);
+        const changes=selected.map(k=>{const d=loadingDrafts[t+":"+k.id] || k;const raw=d.paketanzahl;const paketanzahl=raw==="" || raw==null ? null : Number(raw);const value={...k,paketanzahl,lagerort:d.lagerort};pruefeBeladung(value);return {id:k.id,paketanzahl,lagerort:d.lagerort};});
+        // Keep failed drafts available; each successful customer update is confirmed.
+        for (const change of changes) {await updateCustomer(change.id,{paketanzahl:change.paketanzahl,lagerort:change.lagerort});delete loadingDrafts[t+":"+change.id];}
+        await loadCustomers(t);
       }
       function renderGooglePlanning(t, box) {
         const area = node("div", undefined, "form");
@@ -857,6 +894,12 @@
           field.append(input);
           area.append(field);
         }
+        const firstLabel=node("label","Erster Kunde (optional)"), first=node("select");
+        for(const [value,text] of [["","Google entscheidet"],...lieferStopps(rows).map(stop=>[String(stop.host.id),stop.host.name])]) {const option=node("option",text);option.value=value;first.append(option);}
+        first.value=state(t).firstStopId || "";
+        first.onchange=()=>{state(t).firstStopId=first.value;delete routeDrafts[t];saveState(t);renderTour(t);};
+        firstLabel.append(first);area.append(firstLabel);
+        area.append(node("p","Ein festgelegter erster Kunde kann zwei Google-Anfragen ausloesen. Nach Aenderungen der Reihenfolge bitte 15 Sekunden bis zur naechsten Berechnung warten.","muted"));
         const run = button(routeBusy ? "Google berechnet ..." : "Google-Reihenfolge berechnen", () => calculateGoogleRoute(t), "primary");
         run.disabled = routeBusy;
         area.append(run);
@@ -866,13 +909,21 @@
           const preview = node("section", undefined, "route-preview");
           preview.append(node("h3", "Routenvorschlag - Google Maps"));
           if (Number.isFinite(draft.data.distanceMeters)) preview.append(node("p", (draft.data.distanceMeters / 1000).toLocaleString("de-DE", { maximumFractionDigits:1 }) + " km insgesamt", "muted"));
-          for (const stop of draft.data.stops) {
+          preview.append(node("p","Reine Gesamtfahrzeit: " + routeMetric({distanceMeters:draft.data.distanceMeters,duration:draft.data.duration}),"muted"));
+          preview.append(button("Fahrtrichtung umkehren",()=>calculateGoogleRoute(t,draft.data.stops.map(stop=>stop.hostId).reverse())));
+          for (const [index,stop] of draft.data.stops.entries()) {
             const row = node("div", undefined, "delivery-item");
             row.append(node("strong", "Stopp " + stop.stopNumber + ": " + stop.name));
             row.append(node("p", stop.address, "muted"));
+            row.append(node("p",(index===0 ? "Vom Start: " : "Vom vorherigen Stopp: ") + routeMetric(draft.data.legs?.[index]),"muted"));
+            const moves=node("div",undefined,"actions");
+            for(const [delta,label] of [[-1,"Nach oben"],[1,"Nach unten"]]) {const move=button(label,()=>{const ids=draft.data.stops.map(stop=>stop.hostId);[ids[index],ids[index+delta]]=[ids[index+delta],ids[index]];return calculateGoogleRoute(t,ids);});move.disabled=index+delta<0 || index+delta>=draft.data.stops.length;moves.append(move);}
+            row.append(moves);
             for (const delivery of stop.deliveries) row.append(node("p", "Nr. " + delivery.kartonnummer + " - " + delivery.name, "muted"));
             preview.append(row);
           }
+          preview.append(node("p","Zum Ziel: " + routeMetric(draft.data.legs?.[draft.data.stops.length]),"muted"));
+          preview.append(node("p","Fahrzeiten ohne Besuche und Pausen. Powered by Google, ©" + new Date().getFullYear() + " Google","muted"));
           preview.append(button("Reihenfolge uebernehmen", () => acceptGoogleRoute(t), "primary"));
           preview.append(button("Vorschlag verwerfen", () => { delete routeDrafts[t]; renderTour(t); }));
           area.append(preview);
@@ -894,13 +945,10 @@
           searches[t] = "";
           renderTour(t);
         }));
-        if (auswahlBestaetigt(t)) box.append(node("p", "Auswahl best\u{e4}tigt. Jetzt unter Bearbeiten die fehlenden Angaben erg\u{e4}nzen.", "muted"));
+        if (auswahlBestaetigt(t)) box.append(node("p", "Auswahl best\u{e4}tigt. Die fehlenden Beladeangaben direkt in der Uebersicht ergaenzen.", "muted"));
         renderGooglePlanning(t, box);
         box.append(button("Manuell sortieren & \u{dc}bersicht", () => {
           if (!auswahlBestaetigt(t)) throw new Error("Bitte zuerst die aktuelle Kundenauswahl best\u{e4}tigen.");
-          const offen = rows.filter(k => k.geplant && !k.erledigt);
-          const fehlen = offen.filter(k => fehlendeBeladung(k).length);
-          if (fehlen.length) throw new Error("Bitte zuerst erg\u{e4}nzen:\n\n" + fehlen.map(k => k.name + ": " + fehlendeBeladung(k).join(", ")).join("\n"));
           state(t).uebersicht = true;
           saveState(t);
           renderTour(t);
@@ -913,13 +961,17 @@
             const zeile = node("div", undefined, "delivery-item");
             zeile.append(node("strong", (index + 1) + ". Halt: " + stop.host.name));
             zeile.append(node("p", address(stop.host) || "Lieferadresse fehlt", "muted"));
-            for (const k of stop.lieferungen) zeile.append(node("p", "Nr. " + (k.kartonnummer || "?") + " \u{b7} " + k.name + " \u{b7} " + (k.paketanzahl ?? "?") + " Pakete \u{b7} " + (lagerorte[k.lagerort] || "Lagerort fehlt"), "muted"));
+            const info=state(t).googleRoute;
+            if(googleRouteCurrent(t) && info.legs && info.hostIds) {const legIndex=info.hostIds.indexOf(String(stop.host.id));if(legIndex>=0) zeile.append(node("p", "Anfahrt laut Planung: " + routeMetric(info.legs[legIndex]),"muted"));}
+            for (const k of stop.lieferungen) zeile.append(loadingEditor(k,t));
             box.append(zeile);
           }
-          box.append(button("Weiter zum Tourstart", () => {
-            views[t] = "fahrt";
-            renderTour(t);
-          }, "primary"));
+          box.append(button("Beladeangaben speichern",()=>saveLoading(t),"primary"));
+          const ready=button("Weiter zum Tourstart",()=>{requireReady(t);if(Object.keys(loadingDrafts).some(key=>key.startsWith(t+":"))) throw new Error("Bitte Beladeangaben zuerst speichern.");views[t]="fahrt";renderTour(t);},"primary");
+          ready.dataset.tourReady="true";
+          ready.disabled=rows.some(k=>k.geplant && !k.erledigt && fehlendeBeladung(k).length) || Object.keys(loadingDrafts).some(key=>key.startsWith(t+":"));
+          box.append(ready);
+          if(ready.disabled) box.append(node("p","Bitte zuerst alle Paketanzahlen und Lagerorte vollstaendig eintragen und speichern.","alert"));
         }
         c.append(box);
       }
@@ -1726,6 +1778,7 @@
         s.bestaetigteAuswahl = "";
         s.uebersicht = false;
         s.googleRoute = null;
+        for(const key of Object.keys(loadingDrafts)) if(key.startsWith(t+":")) delete loadingDrafts[key];
         delete routeDrafts[t];
         saveState(t);
         views[t] = "planung";
