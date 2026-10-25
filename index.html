@@ -6,7 +6,7 @@
       name="viewport"
       content="width=device-width, initial-scale=1, viewport-fit=cover"
     />
-    <meta name="theme-color" content="#f3efe9" />
+    <meta name="theme-color" content="#f5f3f7" />
     <title>Weintour</title>
 <link rel="icon" type="image/png" href="weintour-logo.png">
 <link rel="apple-touch-icon" href="weintour-logo.png">
@@ -321,81 +321,21 @@
           grid-template-columns: 1fr;
         }
       }
-      .account-actions { display:flex; gap:8px; flex-wrap:wrap; }
-      #passwordDialog { border:0; border-radius:16px; padding:24px; width:min(420px,calc(100vw - 32px)); }
-      #passwordDialog::backdrop { background:#0007; }
-      .route-preview { border:2px solid #c6add8; padding:16px; border-radius:12px; margin-top:16px; }
-    .loading-fields {
-  display: grid;
-  grid-template-columns: minmax(0, 110px) minmax(0, 180px);
-  gap: 10px;
-  width: 100%;
-}
-.loading-fields label { min-width: 0; }
-.loading-fields input,
-.loading-fields select {
-  box-sizing: border-box;
-  min-width: 0;
-  min-height: 44px;
-  font-size: 16px;
-  padding: 10px;
-}
-.loading-fields input { text-align: center; }
-.tour-preparation > h3 { margin-bottom: 8px; }
-.tour-preparation > .muted { margin: 8px 0 12px; }
-.selection-confirm { padding: 10px 15px; margin-bottom: 10px; }
-.route-planning { gap: 12px; margin: 2px 0 16px; }
-.route-options { border: 1px solid var(--line); border-radius: 10px; padding: 0 12px; }
-.route-options summary { font-size: 14px; font-weight: 500; overflow-wrap: anywhere; }
-.route-options summary::before { content: "+"; margin-right: 9px; font-weight: 700; }
-.route-options[open] summary::before { content: "−"; }
-.route-option-fields { padding: 4px 0 12px; gap: 10px; }
-.route-option-fields label { min-width: 0; font-size: 14px; }
-.route-option-fields input, .route-option-fields select { box-sizing: border-box; min-width: 0; padding: 10px; }
-.route-actions { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 8px; max-width: 460px; }
-.route-actions button { min-width: 0; padding: 10px 8px; font-size: 14px; line-height: 1.3; }
-@media(min-width:600px) { .route-option-fields { grid-template-columns: repeat(2,minmax(0,1fr)); } .route-option-fields label:last-child { grid-column: 1 / -1; } }
-</style>
-  <style id="weingut-unified-design">
-
-/* Einheitlicher Weingut-Stil: Designvariante 2, 18.10.2026 */
-:root{--purple:#634078;--ink:#302838;--muted:#756a78;--line:#ded7d0;--gold:#ae8e4d;background:#f3efe9;color:#302838;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
-body{background:#f3efe9;color:#302838;-webkit-font-smoothing:antialiased}
-h1{color:#41294d;font-size:clamp(22px,4.8vw,27px);font-weight:750;letter-spacing:-.65px;line-height:1.2}
-h2{color:#41294d;letter-spacing:-.55px;font-weight:730}h3{color:#3c2d43;letter-spacing:-.25px;font-weight:700}
-header{position:relative;background:transparent;color:#302838;padding-bottom:20px;margin-bottom:20px}
-header::after{content:"";position:absolute;left:0;right:0;bottom:0;height:1px;background:linear-gradient(90deg,#613b7970,#ae8e4d9c 55%,#ae8e4d10)}
-header h1{margin-top:0;margin-bottom:0}header img,h1 img{border-radius:13px;object-fit:contain;flex-shrink:0;box-shadow:0 4px 12px #42214c1a;border:1px solid #ffffff60}
-button,.btn{background:#fffaf3;color:#49354f;border-color:#dfd4cf;box-shadow:0 1px 2px #4c344008;transition:background .15s ease,border-color .15s ease}
-button:not(:disabled):hover,.btn:hover{background:#f0e6ee;border-color:#cdb9d0}
-.primary,.btn.primary{background:#634078;color:#fffaf2;border-color:#634078;box-shadow:none}
-.primary:not(:disabled):hover,.btn.primary:hover{background:#735087;color:#fffaf2;border-color:#735087}
-.card,.customer{background:#faf8f4;border:1px solid #ded7d0;box-shadow:0 2px 8px #382d2504;border-radius:15px}
-.menu{background:#faf8f4;border-color:#ded7d0;box-shadow:0 2px 8px #382d2504;border-radius:13px;color:#392f3f}
-.menu:not(:disabled):hover{background:#f1eaf2;border-color:#c9b9cf;box-shadow:0 3px 12px #51365d09}
-input,select,textarea{background:#fffdf8;color:#302838;border-color:#ddcfc9}
-input::placeholder,textarea::placeholder{color:#9a8c94;opacity:1}input:focus,select:focus,textarea:focus{border-color:#9e7aaf;outline:2px solid #b2955a40;outline-offset:1px}
-button:focus-visible,a:focus-visible,summary:focus-visible{outline:3px solid #b2955a;outline-offset:3px}
-.pill{background:#ece5ef;color:#654074;border-radius:6px}.pill.done{background:#e4eadd;color:#28633f}
-.tabs button[aria-selected="true"],.tabs button[aria-selected="true"]:hover{background:#634078;color:#fffaf2;border-color:#634078}
-dialog{background:#fffcf7;color:#302838;border:1px solid #dfd2ce;border-radius:20px;box-shadow:0 25px 90px #35233e35}
-dialog::backdrop{background:#33213c69;backdrop-filter:blur(3px)}
-.danger,.error{color:#a83232}.muted,.note,.unit{color:#756a78}
-@media(prefers-reduced-motion:reduce){button,.btn{transition:none}}
-
-.success,.success:not(:disabled):hover{background:#28633f;color:#fff;border-color:#28633f}
-.current{border-color:#b2955a;background:#f2e9d9}.document,.load-info{background:#eee8e1;border-color:#e0d5c9}.customer details,.delivery-item{border-color:#e4d8d0}
-.route-options{background:#f0eae3;border-color:#ded5ca}.route-options summary{color:#654074}
-.account-actions button{background:#fffaf3;border-color:#dfd4cf}.menu strong{color:#392f3f;font-weight:680;letter-spacing:-.3px}
-
-</style>
-</head>
+      .account-actions{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:8px}
+      #passwordDialog{border:0;border-radius:16px;padding:24px;width:min(420px,calc(100vw - 32px));max-height:90vh;overflow:auto;box-sizing:border-box}
+      #passwordDialog::backdrop{background:#0007}
+      #passwordDialog label{display:block;margin:14px 0}
+      #passwordDialog input{width:100%;box-sizing:border-box}
+      #passwordMessage{color:#a12b2b;overflow-wrap:anywhere}
+      @media(max-width:600px){header{flex-wrap:wrap;gap:10px}.account-actions{width:100%}}
+    </style>
+  </head>
   <body>
     <!-- OBERFLAECHE: Anmeldung, Startseite und Touransicht -->
     <main class="wrap">
       <header>
         <h1 style="display:flex;align-items:center;gap:12px;"><img src="weintour-logo.png" alt="" width="48" height="48" style="border-radius:12px;">Weintour</h1>
-        <div class="account-actions"><button id="changePassword" type="button" hidden>Passwort &#228;ndern</button><button id="logout" hidden>Abmelden</button></div>
+        <div class="account-actions"><button id="changePassword" type="button" hidden>Passwort ändern</button><button id="logout" hidden>Abmelden</button></div>
       </header>
       <section id="login" class="card">
         <h2>Anmelden</h2>
@@ -438,11 +378,11 @@ dialog::backdrop{background:#33213c69;backdrop-filter:blur(3px)}
     </main>
     <dialog id="passwordDialog">
       <form id="passwordForm" class="form">
-        <h2>Passwort &#228;ndern</h2>
+        <h2>Passwort ändern</h2>
         <label>Aktuelles Passwort<input name="current" type="password" autocomplete="current-password" required></label>
-        <label>Neues Passwort<input name="next" type="password" autocomplete="new-password" minlength="6" required></label>
-        <label>Neues Passwort wiederholen<input name="again" type="password" autocomplete="new-password" minlength="6" required></label>
-        <p>Mindestens 6 Zeichen. Das neue Passwort gilt f&#252;r dein bestehendes Konto.</p>
+        <label>Neues Passwort<input name="next" type="password" autocomplete="new-password" minlength="8" required></label>
+        <label>Neues Passwort wiederholen<input name="again" type="password" autocomplete="new-password" minlength="8" required></label>
+        <p>Mindestens 6 Zeichen. Das neue Passwort gilt für dein bestehendes Konto.</p>
         <p id="passwordMessage" role="alert"></p>
         <div class="actions"><button id="passwordCancel" type="button">Abbrechen</button><button id="passwordSave" type="submit">Speichern</button></div>
       </form>
@@ -513,10 +453,6 @@ dialog::backdrop{background:#33213c69;backdrop-filter:blur(3px)}
             automatisch: s.automatisch !== false,
             bestaetigteAuswahl: typeof s.bestaetigteAuswahl === "string" ? s.bestaetigteAuswahl : "",
             uebersicht: s.uebersicht === true,
-            firstStopId: typeof s.firstStopId === "string" ? s.firstStopId : "",
-            routeStart: typeof s.routeStart === "string" ? s.routeStart : ZUHAUSE,
-            routeEnd: typeof s.routeEnd === "string" ? s.routeEnd : ZUHAUSE,
-            googleRoute: s.googleRoute || null,
           };
         }
         return states[t];
@@ -577,7 +513,7 @@ dialog::backdrop{background:#33213c69;backdrop-filter:blur(3px)}
         if (next !== userId) {
           userId = next;
           rows = [];
-          for (const obj of [states, views, searches, filters, routeDrafts, loadingDrafts])
+          for (const obj of [states, views, searches, filters])
             for (const k of Object.keys(obj)) delete obj[k];
           showHome();
         }
@@ -593,10 +529,10 @@ dialog::backdrop{background:#33213c69;backdrop-filter:blur(3px)}
         if (userId !== session.user.id) applyCheckedAuth(null);
         else $("app").hidden = true;
         try {
-          const result = await supabaseClient.rpc("pau_app_allowed", { p_app:"weintour" });
+          const result = await supabaseClient.rpc("pau_app_allowed", {p_app:"weintour"});
           if (version !== appAuthVersion) return;
           if (result.error) throw result.error;
-          if (!result.data) throw new Error("Dieser Benutzer ist nicht fuer Weintour freigeschaltet.");
+          if (!result.data) throw new Error("Dieser Benutzer ist nicht für Weintour freigeschaltet.");
           applyCheckedAuth(session);
           $("loginMessage").textContent = "";
         } catch (error) {
@@ -605,15 +541,7 @@ dialog::backdrop{background:#33213c69;backdrop-filter:blur(3px)}
           $("loginMessage").textContent = error.message;
         }
       }
-      function loginAdresse(eingabe) {
-        const name = eingabe.trim().toLowerCase();
-        if (name.includes("@")) throw new Error("Bitte mit deinem Benutzernamen anmelden, zum Beispiel Weintour.");
-        if (name === "weintour") return "fabian-112@t-online.de";
-        if (!/^[a-z0-9][a-z0-9._-]{1,39}$/.test(name)) {
-          throw new Error("Bitte einen Benutzernamen mit 2 bis 40 Zeichen eingeben (Buchstaben, Zahlen, Punkt, Unterstrich oder Bindestrich).");
-        }
-        return name + "@weintour.example.com";
-      }
+      async function loginAdresse(value) {const r=await supabaseClient.rpc('wg_login_email',{p_name:value.trim()});if(r.error)throw r.error;if(!r.data)throw Error('Benutzername oder Passwort stimmt nicht.');return r.data;}
       $("loginForm").onsubmit = async (e) => {
         e.preventDefault();
         const b = e.target.querySelector("button");
@@ -621,7 +549,7 @@ dialog::backdrop{background:#33213c69;backdrop-filter:blur(3px)}
         $("loginMessage").textContent = "Anmeldung l\u{e4}uft \u{2026}";
         try {
           const { data, error } = await supabaseClient.auth.signInWithPassword({
-            email: loginAdresse($("username").value),
+            email: await loginAdresse($("username").value),
             password: $("password").value,
           });
           if (error) throw error;
@@ -635,17 +563,17 @@ dialog::backdrop{background:#33213c69;backdrop-filter:blur(3px)}
         }
       };
       async function changeAccountPassword(current, next, again) {
-        if (next !== again) throw new Error("Die neuen Passwoerter stimmen nicht ueberein.");
-        if (next.length < 6) throw new Error("Mindestens 6 Zeichen eingeben.");
-        if (current === next) throw new Error("Bitte ein anderes neues Passwort waehlen.");
+        if (next !== again) throw new Error("Die neuen Passwörter stimmen nicht überein.");
+        if (next.length < 6) throw new Error("Das neue Passwort braucht mindestens 8 Zeichen.");
+        if (current === next) throw new Error("Bitte ein anderes neues Passwort wählen.");
         const sessionResult = await supabaseClient.auth.getUser();
         if (sessionResult.error) throw sessionResult.error;
         const user = sessionResult.data.user;
-        if (!user || user.id !== userId) throw new Error("Bitte erneut anmelden.");
-        const check = await supabaseClient.auth.signInWithPassword({ email:user.email, password:current });
+        if (!user || user.id !== userId) throw new Error("Bitte zuerst erneut anmelden.");
+        const check = await supabaseClient.auth.signInWithPassword({email:user.email, password:current});
         if (check.error) throw check.error;
-        if (check.data.user.id !== user.id) throw new Error("Das Konto hat sich geaendert.");
-        const result = await supabaseClient.auth.updateUser({ password:next });
+        if (check.data.user.id !== user.id) throw new Error("Das Konto hat sich geändert. Bitte erneut anmelden.");
+        const result = await supabaseClient.auth.updateUser({password:next});
         if (result.error) throw result.error;
       }
       let passwordBusy = false;
@@ -659,19 +587,24 @@ dialog::backdrop{background:#33213c69;backdrop-filter:blur(3px)}
       $("passwordForm").onsubmit = async e => {
         e.preventDefault();
         if (passwordBusy) return;
-        passwordBusy = true;
         const fields = e.target.elements;
-        $("passwordSave").disabled = $("passwordCancel").disabled = $("logout").disabled = true;
-        $("passwordMessage").textContent = "Passwort wird geaendert ...";
+        passwordBusy = true;
+        $("passwordSave").disabled = true;
+        $("passwordCancel").disabled = true;
+        $("logout").disabled = true;
+        $("passwordMessage").textContent = "Passwort wird geändert …";
         try {
           await changeAccountPassword(fields.current.value, fields.next.value, fields.again.value);
           e.target.reset();
           $("passwordDialog").close();
-          alert("Passwort geaendert. Bei der naechsten Anmeldung bitte das neue Passwort verwenden.");
-        } catch (error) { $("passwordMessage").textContent = error.message; }
-        finally {
+          alert("Passwort geändert. Bei der nächsten Anmeldung bitte das neue Passwort verwenden.");
+        } catch (error) {
+          $("passwordMessage").textContent = error.message || "Passwort konnte nicht geändert werden.";
+        } finally {
           passwordBusy = false;
-          $("passwordSave").disabled = $("passwordCancel").disabled = $("logout").disabled = false;
+          $("passwordSave").disabled = false;
+          $("passwordCancel").disabled = false;
+          $("logout").disabled = false;
         }
       };
       $("logout").onclick = async () => {
@@ -682,6 +615,7 @@ dialog::backdrop{background:#33213c69;backdrop-filter:blur(3px)}
         }
         window.location.reload();
       };
+      // Datenbankanfragen erst außerhalb des Auth-Callbacks starten.
       supabaseClient.auth.onAuthStateChange((_event, session) => { setTimeout(() => setAuth(session), 0); });
       supabaseClient.auth.getSession().then(({ data, error }) => {
         if (error) $("loginMessage").textContent = error.message;
@@ -762,7 +696,6 @@ dialog::backdrop{background:#33213c69;backdrop-filter:blur(3px)}
         return rows;
       }
       function renderTour(t) {
-        for(const key of Object.keys(loadingDrafts)) if(key.startsWith(t+":") && !rows.some(k=>k.geplant && !k.erledigt && key===t+":"+k.id)) delete loadingDrafts[key];
         if (page !== t || !userId) return;
         const c = $("content");
         c.replaceChildren();
@@ -773,7 +706,6 @@ dialog::backdrop{background:#33213c69;backdrop-filter:blur(3px)}
           ["fahrt", "\u{1f69a} Aktive Tour"],
         ]) {
           const b = button(label, () => {
-            if (v === "fahrt" && !state(t).gestartet) { requireReady(t); if(Object.keys(loadingDrafts).some(key=>key.startsWith(t+":"))) throw new Error("Bitte Beladeangaben zuerst speichern."); }
             views[t] = v;
             renderTour(t);
           });
@@ -810,263 +742,8 @@ dialog::backdrop{background:#33213c69;backdrop-filter:blur(3px)}
       function auswahlBestaetigt(t) {
         return !!auswahlSignatur(t) && state(t).bestaetigteAuswahl === auswahlSignatur(t);
       }
-      const routeDrafts = {};
-      let routeBusy = false;
-      function routeSnapshot(data) {
-        return data.map(k => Object.fromEntries([
-          "id", "name", "tour", "strasse", "plz", "ort", "geplant", "erledigt", "abgeben_bei_id", "kartonnummer"
-        ].map(key => [key, k[key] ?? null]))).sort((a,b) => String(a.id).localeCompare(String(b.id), "en", { numeric:true }));
-      }
-      function routeStamp(data) {
-        return JSON.stringify(routeSnapshot(data));
-      }
-      function googleRouteCurrent(t) {
-        const info = state(t).googleRoute;
-        if (!info) return false;
-        // Completed visits do not invalidate a route; address, grouping and number edits do.
-        const signature = data => JSON.stringify(routeSnapshot(data).map(k => {
-          const { erledigt, ...other } = k;
-          return other;
-        }));
-        return info.signature === signature(rows) && info.start === state(t).routeStart && info.end === state(t).routeEnd;
-      }
-      function googleRouteSignature(data) {
-        return JSON.stringify(routeSnapshot(data).map(k => { const { erledigt, ...other } = k; return other; }));
-      }
-      async function calculateGoogleRoute(t, stopOrder = null) {
-        if (routeBusy) throw new Error("Eine Berechnung laeuft bereits.");
-        if (!auswahlBestaetigt(t)) throw new Error("Bitte zuerst die Kundenauswahl bestaetigen.");
-        if (state(t).gestartet) throw new Error("Eine gestartete Tour bitte nicht neu nummerieren. Erst die Fahrt abschliessen oder zuruecksetzen.");
-        routeBusy = true;
-        const uid = userId;
-        try {
-          const fresh = await loadCustomers(t);
-          if (!fresh || userId !== uid) return;
-          if (!auswahlBestaetigt(t)) throw new Error("Die Auswahl wurde geaendert. Bitte erneut bestaetigen.");
-          if (fresh.some(k => k.geplant && k.erledigt)) throw new Error("Vor der Neuberechnung bitte erledigte Lieferungen abwaehlen oder die Tour zuruecksetzen.");
-          const stops = lieferStopps(fresh);
-          if (!stops.length) throw new Error("Keine offenen Lieferstopps ausgewaehlt.");
-          if (stops.length > 25) throw new Error("Maximal 25 Lieferstopps pro Berechnung.");
-          for (const stop of stops) if (!address(stop.host)) throw new Error("Strasse oder Ort fehlt bei " + stop.host.name);
-          const start = state(t).routeStart.trim(), end = state(t).routeEnd.trim();
-          if (!start || !end) throw new Error("Bitte Start- und Zieladresse eingeben.");
-          const expected = routeSnapshot(fresh);
-          const sessionResult = await supabaseClient.auth.getSession();
-          if (sessionResult.error) throw sessionResult.error;
-          if (!sessionResult.data.session) throw new Error("Bitte erneut anmelden.");
-          const { data, error } = await supabaseClient.functions.invoke("weintour-route", {
-            body: { tour:t, startAddress:start, endAddress:end, ...(stopOrder ? {stopOrder} : {firstStopId:state(t).firstStopId || null}) },
-            headers: { Authorization:"Bearer " + sessionResult.data.session.access_token }
-          });
-          if (error) {
-            let message = error.message;
-            try { const detail = await error.context.json(); message = detail.error || message; } catch {}
-            throw new Error(message);
-          }
-          if (data?.error) throw new Error(data.error);
-          if (!data || data.tour !== t || !Array.isArray(data.stops)) throw new Error("Ungueltige Routenantwort.");
-          const numbers = data.stops.flatMap(stop => stop.deliveries || []).map(k => ({ id:k.id, kartonnummer:k.kartonnummer }));
-          const selectedIds = fresh.filter(k => k.geplant && !k.erledigt).map(k => String(k.id)).sort();
-          if (JSON.stringify(numbers.map(k => String(k.id)).sort()) !== JSON.stringify(selectedIds) ||
-              new Set(numbers.map(k => k.kartonnummer)).size !== numbers.length || numbers.some(k => !nummerGueltig(k.kartonnummer))) {
-            throw new Error("Die berechneten Lieferungen stimmen nicht mit der Auswahl ueberein.");
-          }
-          if (userId !== uid || page !== t) return;
-          if (routeStamp(rows) !== JSON.stringify(expected) || state(t).routeStart.trim() !== start || state(t).routeEnd.trim() !== end) {
-            throw new Error("Planung wurde geaendert. Bitte neu berechnen.");
-          }
-          routeDrafts[t] = { data, expected, numbers, uid, start, end };
-        } finally {
-          routeBusy = false;
-          if (page === t && userId === uid) renderTour(t);
-        }
-      }
-      async function acceptGoogleRoute(t) {
-        if (routeBusy) throw new Error("Bitte warten, bis die Routenplanung abgeschlossen ist.");
-        const draft = routeDrafts[t];
-        if (!draft || draft.uid !== userId || routeStamp(rows) !== JSON.stringify(draft.expected) ||
-            state(t).routeStart.trim() !== draft.start || state(t).routeEnd.trim() !== draft.end) {
-          throw new Error("Planung wurde geaendert. Bitte Route neu berechnen.");
-        }
-        if (!confirm("Diese Google-Reihenfolge uebernehmen und die Kartonnummern aller ausgewaehlten Lieferungen neu vergeben?")) return;
-        routeBusy = true;
-        try {
-        const { data, error } = await supabaseClient.rpc("weintour_route_uebernehmen", {
-          p_tour:t, p_expected:draft.expected, p_numbers:draft.numbers
-        });
-        if (error) throw error;
-        if (data !== draft.numbers.length) throw new Error("Speicherung konnte nicht bestaetigt werden. Bitte neu laden.");
-        const latest = await loadCustomers(t);
-        delete routeDrafts[t];
-        if (!latest || draft.uid !== userId) return;
-        state(t).googleRoute = { start:draft.start, end:draft.end, signature:googleRouteSignature(latest), distanceMeters:draft.data.distanceMeters, duration:draft.data.duration, legs:draft.data.legs, hostIds:draft.data.stops.map(stop=>String(stop.hostId)) };
-        state(t).routeStart = draft.start;
-        state(t).routeEnd = draft.end;
-        state(t).uebersicht = true;
-        saveState(t);
-        renderTour(t);
-        } finally {
-          routeBusy = false;
-          if (page === t && draft.uid === userId) renderTour(t);
-        }
-      }
-      function routeMetric(leg) {
-        if (!leg) return "Streckendaten fehlen - bitte neu berechnen.";
-        const seconds = Number(String(leg.duration || "").replace(/s$/, ""));
-        const minutes = Math.ceil(seconds / 60);
-        const time = Number.isFinite(minutes) ? (minutes >= 60 ? Math.floor(minutes/60) + " Std. " + minutes%60 + " Min." : minutes + " Min.") : "Zeit unbekannt";
-        return (Number(leg.distanceMeters || 0)/1000).toLocaleString("de-DE",{maximumFractionDigits:1}) + " km - ca. " + time;
-      }
-      function requireReady(t) {
-        if (!auswahlBestaetigt(t)) throw new Error("Bitte zuerst die Kundenauswahl bestaetigen.");
-        const missing = rows.filter(k=>k.geplant && !k.erledigt && fehlendeBeladung(k).length);
-        if (missing.length) throw new Error("Bitte Beladeangaben ergaenzen und speichern: " + missing.map(k=>k.name + ": " + fehlendeBeladung(k).join(", ")).join("; "));
-      }
-      const loadingDrafts = {};
-      function loadingEditor(k,t) {
-        const area = node("div",undefined,"form");
-        area.append(node("strong", "Nr. " + (k.kartonnummer || "?") + " - " + k.name));
-        const key = t + ":" + k.id;
-        const draft = loadingDrafts[key] || {paketanzahl:k.paketanzahl ?? "",lagerort:k.lagerort || ""};
-        const packages = node("input"); packages.type="number"; packages.min="0"; packages.max="100000"; packages.step="1"; packages.value=draft.paketanzahl;
-        const location = node("select");
-        for (const [value,text] of [["","Bitte waehlen"],...Object.entries(lagerorte)]) {const option=node("option",text);option.value=value;location.append(option);}
-        location.value=draft.lagerort;
-        const fields=node("div",undefined,"loading-fields");
-        packages.inputMode="numeric";
-        for (const [title,input] of [["Pakete",packages],["Lagerort",location]]) {const label=node("label",title);label.append(input);fields.append(label);}
-        area.append(fields);
-        const changed=()=>{draft.paketanzahl=packages.value;draft.lagerort=location.value;loadingDrafts[key]=draft;document.querySelectorAll("[data-tour-ready]").forEach(b=>b.disabled=true);};
-        packages.oninput=changed; location.onchange=changed;
-        return area;
-      }
-      async function saveLoading(t) {
-        const selected=rows.filter(k=>k.geplant && !k.erledigt);
-        const changes=selected.map(k=>{const d=loadingDrafts[t+":"+k.id] || k;const raw=d.paketanzahl;const paketanzahl=raw==="" || raw==null ? null : Number(raw);const value={...k,paketanzahl,lagerort:d.lagerort};pruefeBeladung(value);return {id:k.id,paketanzahl,lagerort:d.lagerort};});
-        // Keep failed drafts available; each successful customer update is confirmed.
-        for (const change of changes) {await updateCustomer(change.id,{paketanzahl:change.paketanzahl,lagerort:change.lagerort});delete loadingDrafts[t+":"+change.id];}
-        await loadCustomers(t);
-      }
-      function renderGooglePlanning(t, box) {
-        const area = node("div", undefined, "form");
-        area.classList.add("route-planning");
-        const options=node("details",undefined,"route-options");
-        const firstStop=lieferStopps(rows).find(stop=>String(stop.host.id)===state(t).firstStopId);
-        const summary=node("summary","Routenoptionen - " + (firstStop ? "zuerst " + firstStop.host.name : "Google entscheidet"));
-        options.append(summary);
-        const optionFields=node("div",undefined,"form route-option-fields");
-        options.append(optionFields);
-        area.append(options);
-        for (const [key, label] of [["routeStart","Startadresse"],["routeEnd","Zieladresse"]]) {
-          const field = node("label", label), input = node("input");
-          input.type = "text";
-          input.value = state(t)[key];
-          input.maxLength = 500;
-          input.oninput = () => { state(t)[key] = input.value; delete routeDrafts[t]; area.querySelector(".route-preview")?.remove(); saveState(t); };
-          field.append(input);
-          optionFields.append(field);
-        }
-        const firstLabel=node("label","Erster Kunde (optional)"), first=node("select");
-        for(const [value,text] of [["","Google entscheidet"],...lieferStopps(rows).map(stop=>[String(stop.host.id),stop.host.name])]) {const option=node("option",text);option.value=value;first.append(option);}
-        first.value=state(t).firstStopId || "";
-        first.onchange=()=>{state(t).firstStopId=first.value;delete routeDrafts[t];saveState(t);renderTour(t);};
-        firstLabel.append(first);optionFields.append(firstLabel);
-        const run = button(routeBusy ? "Google berechnet ..." : "Google berechnen", () => calculateGoogleRoute(t), "primary");
-        run.disabled = routeBusy;
-        const routeActions=node("div",undefined,"route-actions");
-        routeActions.append(run);area.append(routeActions);
-        if (googleRouteCurrent(t)) area.append(node("p", "Google-Reihenfolge uebernommen. Die Kartonnummern sind gespeichert.", "muted"));
-        const draft = routeDrafts[t];
-        if (draft && draft.uid === userId && routeStamp(rows) === JSON.stringify(draft.expected)) {
-          const preview = node("section", undefined, "route-preview");
-          preview.append(node("h3", "Routenvorschlag - Google Maps"));
-          if (Number.isFinite(draft.data.distanceMeters)) preview.append(node("p", (draft.data.distanceMeters / 1000).toLocaleString("de-DE", { maximumFractionDigits:1 }) + " km insgesamt", "muted"));
-          preview.append(node("p","Reine Gesamtfahrzeit: " + routeMetric({distanceMeters:draft.data.distanceMeters,duration:draft.data.duration}),"muted"));
-          preview.append(button("Fahrtrichtung umkehren",()=>calculateGoogleRoute(t,draft.data.stops.map(stop=>stop.hostId).reverse())));
-          for (const [index,stop] of draft.data.stops.entries()) {
-            const row = node("div", undefined, "delivery-item");
-            row.append(node("strong", "Stopp " + stop.stopNumber + ": " + stop.name));
-            row.append(node("p", stop.address, "muted"));
-            row.append(node("p",(index===0 ? "Vom Start: " : "Vom vorherigen Stopp: ") + routeMetric(draft.data.legs?.[index]),"muted"));
-            const moves=node("div",undefined,"actions");
-            for(const [delta,label] of [[-1,"Nach oben"],[1,"Nach unten"]]) {const move=button(label,()=>{const ids=draft.data.stops.map(stop=>stop.hostId);[ids[index],ids[index+delta]]=[ids[index+delta],ids[index]];return calculateGoogleRoute(t,ids);});move.disabled=index+delta<0 || index+delta>=draft.data.stops.length;moves.append(move);}
-            row.append(moves);
-            for (const delivery of stop.deliveries) row.append(node("p", "Nr. " + delivery.kartonnummer + " - " + delivery.name, "muted"));
-            preview.append(row);
-          }
-          preview.append(node("p","Zum Ziel: " + routeMetric(draft.data.legs?.[draft.data.stops.length]),"muted"));
-          preview.append(node("p","Fahrzeiten ohne Besuche und Pausen. Powered by Google, ©" + new Date().getFullYear() + " Google","muted"));
-          routeMapOverview(preview,t,draft.data);
-          preview.append(button("Reihenfolge uebernehmen", () => acceptGoogleRoute(t), "primary"));
-          preview.append(button("Vorschlag verwerfen", () => { delete routeDrafts[t]; renderTour(t); }));
-          area.append(preview);
-        }
-        box.append(area);
-      }
-      async function savedTourAction(t,action) {
-        if(routeBusy) throw new Error("Bitte die Routenberechnung zuerst abschliessen.");
-        if(state(t).gestartet) throw new Error("Bitte zuerst die aktive Tour abschliessen oder zuruecksetzen.");
-        if(action==="speichern" && routeDrafts[t]) throw new Error("Bitte den Routenvorschlag zuerst mit Reihenfolge uebernehmen speichern.");
-        const text=action==="speichern"
-          ? "Die aktuelle Kundenauswahl, Abgabestellen und Kartonnummern als letzte Tour speichern? Eine bisherige Vorlage dieser Tour wird ersetzt."
-          : action==="laden"
-          ? "Letzte Tour laden? Die aktuelle Auswahl wird ersetzt. Paketanzahlen und Lagerorte der geladenen Kunden werden geleert und fuer die neue Fahrt eingetragen. Lieferscheine bleiben erhalten - bitte fuer die neue Fahrt pruefen."
-          : "Alle Kunden dieser Tour abwaehlen? Auch Kunden ausserhalb des aktuellen Suchfilters werden abgewaehlt. Kundendaten, Beladeangaben und Lieferscheine bleiben erhalten.";
-        if(!confirm(text)) return;
-        const uid=userId;
-        const {data,error}=await supabaseClient.rpc("weintour_vorlage",{p_tour:t,p_aktion:action,p_start:state(t).routeStart,p_ziel:state(t).routeEnd});
-        if(error) throw error;
-        if(uid!==userId || page!==t) return;
-        if(action==="speichern") {alert("Letzte Tour gespeichert. Du kannst sie spaeter fuer dieses Konto wieder laden.");return;}
-        delete routeDrafts[t];
-        for(const key of Object.keys(loadingDrafts)) if(key.startsWith(t+":")) delete loadingDrafts[key];
-        const st=state(t);st.googleRoute=null;st.bestaetigteAuswahl="";st.uebersicht=false;st.firstStopId="";
-        if(action==="laden") {st.routeStart=data.start;st.routeEnd=data.ziel;filters[t]="auswahl";searches[t]="";}
-        saveState(t);
-        const latest=await loadCustomers(t);
-        if(!latest) return;
-        if(action==="laden") {st.bestaetigteAuswahl=auswahlSignatur(t);st.uebersicht=true;saveState(t);renderTour(t);}
-      }
-      function mapRouteUrl(points) {
-        const url=new URL("https://www.google.com/maps/dir/");
-        url.searchParams.set("api","1");
-        url.searchParams.set("travelmode","driving");
-        url.searchParams.set("origin",points[0].address);
-        url.searchParams.set("destination",points[points.length-1].address);
-        if(points.length>2) url.searchParams.set("waypoints",points.slice(1,-1).map(p=>p.address).join("|"));
-        return url.href;
-      }
-      function mapRouteParts(points,maxWaypoints) {
-        const parts=[];
-        for(let start=0;start<points.length-1;) {
-          let end=Math.min(points.length-1,start+maxWaypoints+1);
-          while(end>start+1 && mapRouteUrl(points.slice(start,end+1)).length>2048) end--;
-          const route=points.slice(start,end+1);
-          if(mapRouteUrl(route).length>2048) throw new Error("Adresse ist fuer einen Google-Maps-Link zu lang.");
-          parts.push(route);start=end;
-        }
-        return parts;
-      }
-      function routeMapOverview(container,t,draftData=null) {
-        let stops;
-        try {stops=draftData ? draftData.stops.map(stop=>({name:stop.name,address:stop.address})) : lieferStopps(rows.map(k=>({...k,erledigt:false}))).map(stop=>({name:stop.host.name,address:address(stop.host)}));}
-        catch {return;}
-        if(!stops.length || stops.some(stop=>!stop.address)) return;
-        const points=[{name:"Start",address:draftData?.startAddress || state(t).routeStart},...stops,{name:"Ziel",address:draftData?.endAddress || state(t).routeEnd}];
-        const section=node("details",undefined,"route-options");
-        section.append(node("summary","Route in Google Maps ansehen"));
-        const parts=mapRouteParts(points,mobile()?3:9);
-        section.append(node("p",parts.length===1 ? "Geplante Stopps als Kartenuebersicht. Die Navigation startet nicht automatisch." : "Google Maps begrenzt die Zwischenstopps pro Link. Deshalb ist die gesamte Tour hier in " + parts.length + " anschliessende Abschnitte aufgeteilt; alle Stopps sind enthalten.","muted"));
-        for(const [index,part] of parts.entries()) {
-          const link=node("a",parts.length===1 ? "Route oeffnen" : "Abschnitt " + (index+1) + ": " + part[0].name + " - " + part[part.length-1].name,"btn");
-          link.href=mapRouteUrl(part);link.target="_blank";link.rel="noopener noreferrer";
-          section.append(link);
-        }
-        section.append(node("p","Die Stoppreihenfolge wird uebergeben. Google Maps berechnet den Strassenverlauf und aktuelle Fahrzeiten beim Oeffnen neu.","muted"));
-        container.append(section);
-      }
       function renderPlanSteps(t, c) {
-        const box = node("section", undefined, "card tour-preparation");
+        const box = node("section", undefined, "card");
         box.append(node("h3", "N\u{e4}chste Tour vorbereiten"));
         box.append(node("p", "1. Kunden ausw\u{e4}hlen und best\u{e4}tigen. 2. Beladeangaben erg\u{e4}nzen. 3. Sortieren und Reihenfolge pr\u{fc}fen.", "muted"));
         box.append(button(auswahlBestaetigt(t) ? "Auswahl erneut best\u{e4}tigen" : "Auswahl best\u{e4}tigen", () => {
@@ -1079,41 +756,32 @@ dialog::backdrop{background:#33213c69;backdrop-filter:blur(3px)}
           filters[t] = "auswahl";
           searches[t] = "";
           renderTour(t);
-        }, "primary selection-confirm"));
-        if (auswahlBestaetigt(t)) box.append(node("p", "Auswahl bestaetigt.", "muted"));
-        const templates=node("details",undefined,"route-options");
-        templates.append(node("summary","Letzte Tour wiederverwenden"));
-        const templateActions=node("div",undefined,"actions");
-        templateActions.append(button("Letzte Tour speichern",()=>savedTourAction(t,"speichern")),button("Letzte Tour laden",()=>savedTourAction(t,"laden")));
-        templates.append(node("p","Speichert die Auswahl, Reihenfolge und Abgabestellen je Tour fuer dein Konto. Paketanzahl, Lagerort und Lieferscheine bitte fuer die neue Fahrt pruefen.","muted"),templateActions);
-        box.append(templates);
-        renderGooglePlanning(t, box);
-        box.querySelector(".route-actions").append(button("Manuell / Uebersicht", () => {
+        }));
+        if (auswahlBestaetigt(t)) box.append(node("p", "Auswahl best\u{e4}tigt. Jetzt unter Bearbeiten die fehlenden Angaben erg\u{e4}nzen.", "muted"));
+        box.append(button("Sortieren & \u{dc}bersicht", () => {
           if (!auswahlBestaetigt(t)) throw new Error("Bitte zuerst die aktuelle Kundenauswahl best\u{e4}tigen.");
+          const offen = rows.filter(k => k.geplant && !k.erledigt);
+          const fehlen = offen.filter(k => fehlendeBeladung(k).length);
+          if (fehlen.length) throw new Error("Bitte zuerst erg\u{e4}nzen:\n\n" + fehlen.map(k => k.name + ": " + fehlendeBeladung(k).join(", ")).join("\n"));
           state(t).uebersicht = true;
           saveState(t);
           renderTour(t);
-        }, "secondary"));
+        }, "primary"));
         if (auswahlBestaetigt(t) && state(t).uebersicht) {
           box.append(node("h3", "Reihenfolge nach Kartonnummer"));
-          routeMapOverview(box,t);
           const stops = lieferStopps(rows);
           if (!stops.length) box.append(node("p", "Keine offenen Lieferungen."));
           for (const [index, stop] of stops.entries()) {
             const zeile = node("div", undefined, "delivery-item");
             zeile.append(node("strong", (index + 1) + ". Halt: " + stop.host.name));
             zeile.append(node("p", address(stop.host) || "Lieferadresse fehlt", "muted"));
-            const info=state(t).googleRoute;
-            if(googleRouteCurrent(t) && info.legs && info.hostIds) {const legIndex=info.hostIds.indexOf(String(stop.host.id));if(legIndex>=0) zeile.append(node("p", "Anfahrt laut Planung: " + routeMetric(info.legs[legIndex]),"muted"));}
-            for (const k of stop.lieferungen) zeile.append(loadingEditor(k,t));
+            for (const k of stop.lieferungen) zeile.append(node("p", "Nr. " + (k.kartonnummer || "?") + " \u{b7} " + k.name + " \u{b7} " + (k.paketanzahl ?? "?") + " Pakete \u{b7} " + (lagerorte[k.lagerort] || "Lagerort fehlt"), "muted"));
             box.append(zeile);
           }
-          box.append(button("Beladeangaben speichern",()=>saveLoading(t),"primary"));
-          const ready=button("Weiter zum Tourstart",()=>{requireReady(t);if(Object.keys(loadingDrafts).some(key=>key.startsWith(t+":"))) throw new Error("Bitte Beladeangaben zuerst speichern.");views[t]="fahrt";renderTour(t);},"primary");
-          ready.dataset.tourReady="true";
-          ready.disabled=rows.some(k=>k.geplant && !k.erledigt && fehlendeBeladung(k).length) || Object.keys(loadingDrafts).some(key=>key.startsWith(t+":"));
-          box.append(ready);
-          if(ready.disabled) box.append(node("p","Bitte zuerst alle Paketanzahlen und Lagerorte vollstaendig eintragen und speichern.","alert"));
+          box.append(button("Weiter zum Tourstart", () => {
+            views[t] = "fahrt";
+            renderTour(t);
+          }, "primary"));
         }
         c.append(box);
       }
@@ -1180,11 +848,6 @@ dialog::backdrop{background:#33213c69;backdrop-filter:blur(3px)}
               ),
             );
           for (const k of found) list.append(customerCard(k, t));
-          if(rows.some(k=>k.geplant)) {
-            const bottom=node("div",undefined,"card");
-            bottom.append(button("Alle Kunden abwaehlen",()=>savedTourAction(t,"abwaehlen"),"danger"));
-            list.append(bottom);
-          }
         }
         search.oninput = () => {
           searches[t] = search.value;
@@ -1384,7 +1047,7 @@ dialog::backdrop{background:#33213c69;backdrop-filter:blur(3px)}
           next = stopp?.host;
         const panel = node("section", undefined, "card current");
         panel.append(
-          node("p", "Reihenfolge nach gespeicherter Kartonnummer.", "muted"),
+          node("p", "Reihenfolge: nach Kartonnummer. Google-Optimierung folgt.", "muted"),
         );
         if (selected.length) {
           const progress = node("progress", undefined, "progress");
@@ -1506,8 +1169,8 @@ dialog::backdrop{background:#33213c69;backdrop-filter:blur(3px)}
           panel.append(
             node("h3", "\u{2713} Alle ausgew\u{e4}hlten Kunden erledigt"),
             button(
-              "Zum Tourziel navigieren",
-              () => navigate(googleRouteCurrent(t) ? state(t).routeEnd : ZUHAUSE),
+              "\u{1f3e0} Nach Hause navigieren",
+              () => navigate(ZUHAUSE),
               "primary",
             ),
           );
@@ -1529,7 +1192,6 @@ dialog::backdrop{background:#33213c69;backdrop-filter:blur(3px)}
         );
         panel.append(label);
         c.append(panel);
-        routeMapOverview(c,t);
         renderHotel(t, c);
         c.append(button("Tour zur\u{fc}cksetzen", () => resetTour(t), "danger"));
         if (stopps.length > 1) {
@@ -1588,7 +1250,7 @@ dialog::backdrop{background:#33213c69;backdrop-filter:blur(3px)}
             return;
           }
           const next = lieferStopps(latest)[0]?.host,
-            a = next ? address(next) : (googleRouteCurrent(t) ? state(t).routeEnd : ZUHAUSE);
+            a = next ? address(next) : ZUHAUSE;
           if (next && !a)
             throw new Error(
               "Besuch gespeichert. Beim n\u{e4}chsten Kunden fehlen Stra\u{df}e oder Ort.",
@@ -1925,13 +1587,10 @@ dialog::backdrop{background:#33213c69;backdrop-filter:blur(3px)}
         s.hotel = "";
         s.bestaetigteAuswahl = "";
         s.uebersicht = false;
-        s.googleRoute = null;
-        for(const key of Object.keys(loadingDrafts)) if(key.startsWith(t+":")) delete loadingDrafts[key];
-        delete routeDrafts[t];
         saveState(t);
         views[t] = "planung";
         await loadCustomers(t);
       }
     </script>
-  </body>
+  <script>setInterval(async()=>{try{if(userId){const r=await supabaseClient.rpc('wg_app_erlaubt',{p_app:'weintour'});if(!r.error&&r.data===false)await setAuth(null)}}catch{}},60000);</script></body>
 </html>
