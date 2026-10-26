@@ -329,13 +329,26 @@
       #passwordMessage{color:#a12b2b;overflow-wrap:anywhere}
       @media(max-width:600px){header{flex-wrap:wrap;gap:10px}.account-actions{width:100%}}
     </style>
-  </head>
+  <link rel="manifest" href="manifest.webmanifest?v=install1">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<script src="app-installation.js?v=1" data-app-name="Weintour" defer></script>
+<script src="app-home.js?v=tour-design1" data-app-home="weintour" defer></script>
+<link rel="stylesheet" href="weingut-design.css?v=tour1">
+<script src="weingut-design.js?v=tour1" defer></script>
+</head>
   <body>
     <!-- OBERFLAECHE: Anmeldung, Startseite und Touransicht -->
     <main class="wrap">
-      <header>
-        <h1 style="display:flex;align-items:center;gap:12px;"><img src="weintour-logo.png" alt="" width="48" height="48" style="border-radius:12px;">Weintour</h1>
-        <div class="account-actions"><button id="changePassword" type="button" hidden>Passwort ändern</button><button id="logout" hidden>Abmelden</button></div>
+      <header class="winery-header">
+        <div class="winery-brand">
+          <div class="winery-mark"><img src="logo-pau-vorlage.svg" alt="Pau – zur Startübersicht"><span>Pau</span></div>
+          <div class="winery-title"><h1>Weingut Pau &amp; Maya BIO</h1><p>Weintour</p></div>
+          <button type="button" class="winery-mark maya-home" aria-label="Zur Startübersicht"><img src="logo-maya-vorlage.svg" alt=""><span>Maya</span></button>
+        </div>
+        <details class="tour-menu"><summary aria-label="Menü">☰</summary><div class="tour-menu-panel">
+          <button type="button" id="tour-home">Startübersicht</button>
+          <div class="account-actions"><button id="changePassword" type="button" hidden>Passwort ändern</button><button id="logout" type="button" hidden>Abmelden</button></div>
+        </div></details>
       </header>
       <section id="login" class="card">
         <h2>Anmelden</h2>
@@ -356,6 +369,7 @@
       </section>
       <div id="app" hidden>
         <section id="home">
+          <div class="tour-welcome"><h2>Weintour im Überblick</h2><p>Kunden verwalten. Touren planen. Gemeinsam unterwegs.</p></div>
           <button class="menu" data-page="kunde">
             <strong>&#10133; Kunde anlegen</strong
             >
